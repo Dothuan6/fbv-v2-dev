@@ -676,3 +676,8 @@ table.table{width:100%;border-collapse:collapse;font-size:14px}
 .cms-side a.brand:hover{background:none}
 .mb-32{margin-bottom:32px}
 .hub-link b{color:var(--text)}
+.dropdown a svg,.dropdown button svg{width:18px;height:18px;flex:none;color:var(--text-2)}
+.dropdown .noti .ic svg{width:19px;height:19px;color:inherit}
+.dropdown .dd-head a{display:inline;width:auto;padding:0;color:var(--primary);font-size:13px}
+.dropdown .dd-head a:hover{background:none;text-decoration:underline}
+.dropdown .dd-head b{white-space:nowrap}
