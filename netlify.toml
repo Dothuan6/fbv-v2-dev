@@ -1,0 +1,19 @@
+# Netlify — site tĩnh, không cần build
+[build]
+  publish = "."
+  command = ""
+
+# Trang 404 tùy chỉnh (Netlify tự dùng 404.html ở thư mục gốc)
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Robots-Tag = "noindex"
