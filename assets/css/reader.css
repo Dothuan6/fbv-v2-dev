@@ -359,3 +359,15 @@
 
 @media (min-width:1280px){.rd .plans{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .rd .plan{min-width:0}
+
+/* ---------- Fix: giữ lề 16px cho carousel khi scroll-snap kích hoạt ----------
+   scroll-snap-align:start căn thẻ đầu vào mép container (bỏ qua padding) → thẻ dính sát mép màn hình.
+   scroll-padding-inline báo cho trình duyệt vị trí “mép” thật = lề nội dung. */
+.rd .hscroll{scroll-padding-inline:16px}
+.rd .hscroll>:last-child{margin-right:0}
+.rd .hscroll::after{content:"";flex:0 0 1px}
+/* Ảnh bìa báo cáo: thụt lề + bo góc như các thẻ khác */
+.rd .art-cover{margin:0 0 16px;border-radius:16px}
+@media (min-width:768px){
+  .rd .hscroll{scroll-padding-inline:32px}
+}
