@@ -3,6 +3,12 @@
 Prototype click-through (HTML/CSS/JS thuần, không cần build) cho **Web Reader** (độc giả) và **CMS Web Portal** (chuyên gia, thẩm định, biên tập, quản trị) của FBV v2.
 Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu trong `localStorage` của trình duyệt.
 
+## Giao diện
+
+- **Web Reader + Phase 2: mobile-first (app style)** — gốc là app điện thoại: appbar, tab bar đáy (Nghiên cứu · Thị trường · Phản biện · Tôi), bottom sheet, thanh thao tác đáy khi đọc báo cáo, khung chat phản biện.
+  Mở rộng dần: **≥ 768px** thanh rail icon bên trái · **≥ 1024px** sidebar đầy đủ + bố cục 2 cột.
+- **CMS**: giao diện quản trị desktop (responsive cơ bản).
+
 ## Chạy thử trên máy
 
 Mở trực tiếp `index.html` bằng trình duyệt, hoặc chạy một web server tĩnh:
@@ -29,7 +35,9 @@ index.html            Hub danh mục màn hình
 404.html              Trang lỗi (Netlify)
 reader/               25 màn hình độc giả + Phase 2
 cms/                  12 màn hình CMS
-assets/css/app.css    Design tokens + component
+assets/css/app.css    Design tokens + component dùng chung (Hub, CMS)
+assets/css/reader.css App UI mobile-first cho Web Reader
+assets/js/shell.js    App shell Reader (appbar, tab bar, rail) + component mobile
 assets/js/data.js     Dữ liệu giả (báo cáo, chuyên gia, chỉ số, phản biện…)
 assets/js/core.js     Store, layout, component, thanh Demo
 assets/js/charts.js   Biểu đồ SVG (line, bar, sparkline) — không phụ thuộc thư viện
