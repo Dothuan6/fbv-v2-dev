@@ -27,7 +27,7 @@
     t = t || FBV.theme();
     const eff = t === 'system' ? (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t;
     document.documentElement.dataset.theme = eff;
-    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = eff === 'light' ? '#FFFFFF' : '#121212';
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = eff === 'light' ? '#FFFFFF' : '#001A3A';
   };
   FBV.setTheme = (t) => { try { localStorage.setItem('fbv-theme', t); } catch (e) {} FBV.applyTheme(t); };
   FBV.cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -232,29 +232,30 @@
     gem: '<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/>'
   };
   FBV.icon = (n, cls) => `<svg class="${cls || 'i'}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
-  FBV.verifiedIcon = () => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF6719" d="M12 1.5l2.6 1.9 3.2-.1 1 3 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3-3.2-.1L12 22.5l-2.6-1.9-3.2.1-1-3-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3 3.2.1z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  FBV.verifiedIcon = () => '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1BACCE" d="M12 1.5l2.6 1.9 3.2-.1 1 3 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3-3.2-.1L12 22.5l-2.6-1.9-3.2.1-1-3-2.6-1.9 1-3.1-1-3.1 2.6-1.9 1-3 3.2.1z"/><path d="m8 12 3 3 5-6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   FBV.vb = (e) => (e && e.verified ? `<span class="vbadge" title="Verified by FBV">${FBV.verifiedIcon()}</span>` : '');
   FBV.googleIcon = () => '<svg class="gi-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>';
   FBV.appleIcon = () => '<svg class="gi-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9a4.8 4.8 0 0 0-3.8-2c-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.6 1.3-.1 1.7-.8 3.3-.8 1.5 0 1.9.8 3.3.8 1.4 0 2.2-1.2 3-2.5a10 10 0 0 0 1.4-2.8c-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg>';
 
   /* ---------------- Brand ---------------- */
-  FBV.logoMark = (cls = 'logo-mark') => `<svg class="${cls}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#FF6719"/><path d="M8 23V14M13.5 23V10M19 23v-6M24.5 23V8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`;
-  FBV.brand = (href, sub) => `<a class="logo" href="${href}">${FBV.logoMark()}<span>FBV${sub ? `<small>${sub}</small>` : ''}</span></a>`;
+  FBV.logoMark = (cls = 'logo-mark') => `<img class="${cls}" src="${FBV.url('assets/media/logo-mark.png')}" alt="FBV.ONE" width="32" height="32">`;
+  FBV.logoFull = (cls = 'logo-full') => `<div class="${cls}"><img src="${FBV.url('assets/media/logo.png')}" alt="" width="72" height="72"><span class="wm">FBV<span class="one">.ONE</span></span></div>`;
+  FBV.brand = (href, sub) => `<a class="logo" href="${href}" aria-label="FBV.ONE">${FBV.logoMark()}<span>FBV<span class="one">.ONE</span>${sub ? `<small>${sub}</small>` : ''}</span></a>`;
 
   /* ---------------- Cover art (deterministic) ---------------- */
-  const PAL = { fintech: ['#1D1633', '#3B2A6E', '#A78BFA'], macro: ['#0F1F2E', '#15476B', '#5AA9FF'], micro: ['#10231B', '#1F5A3F', '#4ADE80'] };
+  const PAL = { fintech: ['#1A0840', '#4A0D96', '#B98CFF'], macro: ['#00254F', '#0D6A9C', '#1BACCE'], micro: ['#062A3A', '#0B6E7A', '#5FE0C8'] };
   FBV.cover = (r) => {
     const [a, b, c] = PAL[r.stream] || PAL.macro; const n = r.cover || 1; const id = 'cv' + r.id + Math.random().toString(36).slice(2, 5);
     let seed = n * 9301 + 49297; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
     let pts = ''; let y = 130 - rnd() * 20;
     for (let x = 0; x <= 320; x += 20) { y = Math.max(40, Math.min(190, y + (rnd() - .48) * 34)); pts += `${x},${y.toFixed(1)} `; }
     const bars = Array.from({ length: 9 }, (_, i) => { const h = 20 + rnd() * 70; return `<rect x="${24 + i * 32}" y="${240 - h}" width="14" height="${h}" rx="3" fill="${c}" opacity="${.14 + rnd() * .16}"/>`; }).join('');
-    const circ = `<circle cx="${200 + rnd() * 90}" cy="${40 + rnd() * 50}" r="${34 + rnd() * 30}" fill="#FF6719" opacity=".22"/>`;
+    const circ = `<circle cx="${200 + rnd() * 90}" cy="${40 + rnd() * 50}" r="${34 + rnd() * 30}" fill="#FECB00" opacity=".28"/>`;
     return `<svg viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="320" height="240" fill="url(#${id})"/>${circ}${bars}<g stroke="#fff" stroke-opacity=".07">${[60, 110, 160, 210].map((yy) => `<line x1="0" x2="320" y1="${yy}" y2="${yy}"/>`).join('')}</g><polyline points="${pts}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity=".92"/><polyline points="${pts} 320,240 0,240" fill="#fff" opacity=".05"/></svg>`;
   };
 
   /* ---------------- Avatars & badges ---------------- */
-  const AVC = ['#FF6719', '#5AA9FF', '#9B7BFF', '#2FD06E', '#F5C518', '#FF5A8A', '#22C3C3'];
+  const AVC = ['#1BACCE', '#6C06C8', '#FE8C10', '#0D86B8', '#D9A400', '#1F9E74', '#C2338A'];
   const hueOf = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AVC[h % AVC.length]; };
   FBV.avatar = (p, size = '') => {
     if (!p) return `<span class="av ${size}">?</span>`;

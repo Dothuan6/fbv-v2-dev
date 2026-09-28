@@ -16,7 +16,7 @@
   pages.login = () => {
     if (F.me()) { F.go(nextUrl()); return; }
     authPage(`${authBar(`<a class="icon-btn" href="${F.url('reader/index.html')}" aria-label="Đóng">${I('x')}</a>`)}
-      <div class="auth-wrap"><div class="auth-hero">${F.logoMark()}<h1>Nghiên cứu kinh tế – tài chính, thẩm định bởi chuyên gia</h1><p>Đăng nhập hoặc tạo tài khoản FBV để lưu báo cáo, theo dõi chuyên gia và gửi phản biện 1:1.</p></div>
+      <div class="auth-wrap"><div class="auth-hero">${F.logoFull()}<h1>Nghiên cứu kinh tế – tài chính, thẩm định bởi chuyên gia</h1><p>Đăng nhập hoặc tạo tài khoản FBV để lưu báo cáo, theo dõi chuyên gia và gửi phản biện 1:1.</p></div>
       <div class="stack">
         <button class="btn btn-white btn-pill btn-block" data-sso="apple">${F.appleIcon()}Tiếp tục với Apple</button>
         <button class="btn btn-gray btn-pill btn-block" data-sso="google">${F.googleIcon()}Tiếp tục với Google</button>
@@ -105,7 +105,7 @@
           ${F.db().experts.map((e) => `<div class="ob-item">${F.avatar(e, 'md')}<div class="t"><b><span class="ellipsis">${F.esc(e.name)}</span>${F.vb(e)}</b><small class="ellipsis">${F.esc(e.title)}</small><p class="clamp2">${F.esc(e.bio)}</p></div><button class="plus-btn ${fol.has(e.id) ? 'on' : ''}" data-e="${e.id}" aria-label="${fol.has(e.id) ? 'Bỏ theo dõi' : 'Theo dõi'} ${F.esc(e.name)}">${I(fol.has(e.id) ? 'check' : 'plus')}</button></div>`).join('')}`;
         cta = `<button class="btn btn-primary btn-pill btn-block" id="nx">${fol.size ? `Tiếp tục · theo dõi ${fol.size}` : 'Bỏ qua'}</button>`;
       } else {
-        body = `<div class="ob-head" style="text-align:center;padding-top:40px"><div class="empty" style="padding:0 0 12px"><div class="ico" style="width:84px;height:84px;background:var(--accent-soft);color:var(--accent)">${I('bell')}</div></div><h1>Bật thông báo</h1><p>Nhận thông báo khi chuyên gia trả lời phản biện của bạn hoặc xuất bản báo cáo mới.</p></div>`;
+        body = `<div class="ob-head" style="text-align:center;padding-top:40px"><div class="empty" style="padding:0 0 12px"><div class="ico" style="width:84px;height:84px;background:var(--accent-soft);color:var(--accent-text)">${I('bell')}</div></div><h1>Bật thông báo</h1><p>Nhận thông báo khi chuyên gia trả lời phản biện của bạn hoặc xuất bản báo cáo mới.</p></div>`;
         cta = `<button class="btn btn-primary btn-pill btn-block" id="nx">Bật thông báo</button><button class="btn btn-ghost btn-block" id="skip">Để sau</button>`;
       }
       authPage(`${authBar(step > 1 ? `<button class="icon-btn" id="bk" aria-label="Quay lại">${I('chevL')}</button>` : '', step < 3 ? `<button class="txt-btn" id="skipAll">Bỏ qua</button>` : '')}${steps}<div style="padding-bottom:150px;max-width:600px;margin:0 auto">${body}</div><div class="bottom-cta"><div class="inner">${cta}</div></div>`);
@@ -250,7 +250,7 @@
       $('#nv').innerHTML = `<div class="row between" style="padding:0 var(--gutter) 8px"><div class="chips">${[['all', 'Tất cả'], ['answer', 'Phản biện'], ['report', 'Báo cáo mới'], ['system', 'Hệ thống']].map((x) => `<button class="chip ${f === x[0] ? 'on' : ''}" data-f="${x[0]}">${x[1]}</button>`).join('')}</div></div>
         ${all.some((n) => !n.read) ? `<div style="padding:0 var(--gutter) 6px;text-align:right"><button class="btn-text small" id="ra">Đánh dấu tất cả đã đọc</button></div>` : ''}
         ${list.length ? list.map((n) => { const q = n.type === 'answer' ? F.inquiry(n.ref) : null; const r = n.type !== 'answer' && n.ref ? F.report(n.ref) : null; const who = q ? F.expert(q.expert) : r ? F.expert(r.author) : null; const ic = { answer: 'chat', report: 'file', follow: 'user', system: 'info' }[n.type];
-          return `<a class="act ${n.read ? '' : 'unread'}" href="${F.url(notiLink(n))}" data-n="${n.id}"><span class="ai">${who ? F.avatar(who, 'md') : `<span class="av md" style="background:var(--accent)">${F.logoMark('i')}</span>`}<span class="ib">${I(ic)}</span></span><span class="t">${F.esc(n.text)}<small>${F.ago(n.at)}</small></span>${n.read ? '' : '<span class="udot" style="margin-top:6px"></span>'}</a>`; }).join('') : F.empty('bell', 'Chưa có thông báo', 'Hoạt động mới sẽ xuất hiện tại đây.')}`;
+          return `<a class="act ${n.read ? '' : 'unread'}" href="${F.url(notiLink(n))}" data-n="${n.id}"><span class="ai">${who ? F.avatar(who, 'md') : F.logoMark('av md')}<span class="ib">${I(ic)}</span></span><span class="t">${F.esc(n.text)}<small>${F.ago(n.at)}</small></span>${n.read ? '' : '<span class="udot" style="margin-top:6px"></span>'}</a>`; }).join('') : F.empty('bell', 'Chưa có thông báo', 'Hoạt động mới sẽ xuất hiện tại đây.')}`;
       $$('[data-f]').forEach((b) => (b.onclick = () => { f = b.dataset.f; draw(); }));
       const ra = $('#ra'); if (ra) ra.onclick = () => { all.forEach((n) => (n.read = true)); F.save(); draw(); F.toast('Đã đánh dấu tất cả là đã đọc'); };
       $$('[data-n]').forEach((a) => a.addEventListener('click', () => { const n = all.find((x) => x.id === a.dataset.n); n.read = true; F.save(); }));
@@ -352,7 +352,7 @@
     const v = F.shell({ side: 'me', bar: 'close', back: r ? 'reader/report.html?id=' + r.id : 'reader/settings.html', notab: true, title: '' });
     let plan = 'yearly';
     const keys = ['monthly', 'quarterly', 'yearly'].concat(r && r.premium ? ['single'] : []);
-    v.innerHTML = `<div class="page" style="padding-bottom:170px">${p2Note()}<div class="auth-hero" style="padding-top:4px">${F.logoMark()}<h1>FBV Premium</h1><p>Toàn bộ nghiên cứu chuyên sâu và quyền tương tác cao cấp cùng chuyên gia đã được FBV thẩm định.</p></div>
+    v.innerHTML = `<div class="page" style="padding-bottom:170px">${p2Note()}<div class="auth-hero" style="padding-top:4px">${F.logoFull()}<h1>FBV Premium</h1><p>Toàn bộ nghiên cứu chuyên sâu và quyền tương tác cao cấp cùng chuyên gia đã được FBV thẩm định.</p></div>
       ${F.hasSub() ? `<div class="note ok mb-16">${I('checkCircle')}<span>Bạn đang dùng <b>Premium — ${PLANS[F.session().subscription.plan].name}</b>. <a class="link" href="${F.url('reader/subscription.html')}">Quản lý gói</a></span></div>` : ''}
       <div>${PERKS.map((p) => `<div class="perk"><span class="ic">${I(p[0])}</span><div><b>${p[1]}</b><small>${p[2]}</small></div></div>`).join('')}</div>
       <div class="group-title mt-24">Chọn gói</div><div class="stack" id="pl"></div>
@@ -393,7 +393,7 @@
           m.close(); const s = F.session(); s.phase2 = true;
           if (plan === 'single') { s.unlocked = (s.unlocked || []).concat(r ? [r.id] : []); } else s.subscription = { plan, store, since: new Date().toISOString(), renew: renew.toISOString(), autoRenew: true };
           F.save();
-          v.innerHTML = `<div class="page"><div class="empty" style="padding-top:48px"><div class="ico" style="width:72px;height:72px;background:var(--accent-soft);color:var(--accent)">${I(plan === 'single' ? 'unlock' : 'crown')}</div><h3 class="serif" style="font-size:24px">${plan === 'single' ? 'Đã mở khóa báo cáo' : 'Chào mừng đến FBV Premium'}</h3><p>${plan === 'single' ? 'Báo cáo đã được thêm vào tài khoản của bạn vĩnh viễn.' : 'Mọi báo cáo chuyên sâu, PDF và phản biện 1:1 không giới hạn đã được mở.'}</p><a class="btn btn-primary btn-pill" style="min-width:220px" href="${F.url(r ? 'reader/report.html?id=' + r.id : 'reader/index.html')}">${r ? 'Đọc báo cáo' : 'Bắt đầu đọc'}</a>${plan === 'single' ? '' : `<a class="btn btn-ghost" href="${F.url('reader/subscription.html')}">Quản lý gói</a>`}</div></div>`;
+          v.innerHTML = `<div class="page"><div class="empty" style="padding-top:48px"><div class="ico" style="width:72px;height:72px;background:var(--accent-soft);color:var(--accent-text)">${I(plan === 'single' ? 'unlock' : 'crown')}</div><h3 class="serif" style="font-size:24px">${plan === 'single' ? 'Đã mở khóa báo cáo' : 'Chào mừng đến FBV Premium'}</h3><p>${plan === 'single' ? 'Báo cáo đã được thêm vào tài khoản của bạn vĩnh viễn.' : 'Mọi báo cáo chuyên sâu, PDF và phản biện 1:1 không giới hạn đã được mở.'}</p><a class="btn btn-primary btn-pill" style="min-width:220px" href="${F.url(r ? 'reader/report.html?id=' + r.id : 'reader/index.html')}">${r ? 'Đọc báo cáo' : 'Bắt đầu đọc'}</a>${plan === 'single' ? '' : `<a class="btn btn-ghost" href="${F.url('reader/subscription.html')}">Quản lý gói</a>`}</div></div>`;
         }, 1400);
       };
     };
@@ -407,7 +407,7 @@
     if (!me) { v.innerHTML = F.gate('card', 'Đăng nhập để quản lý gói', 'Xem gói đang dùng, gia hạn và khôi phục giao dịch.'); return; }
     const sub = s.subscription; const un = (s.unlocked || []).map(F.report).filter(Boolean);
     v.innerHTML = `<div class="page groups" style="padding-top:12px">${p2Note()}
-      ${sub ? `<div class="panel" style="padding:18px"><div class="row"><span class="ib" style="width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center">${I('crown')}</span><div class="grow"><b style="font-size:17px">FBV Premium — ${PLANS[sub.plan].name}</b><div class="small muted">${sub.store === 'apple' ? 'App Store' : 'Google Play'} · ${F.num(PLANS[sub.plan].price)}đ${PLANS[sub.plan].per}</div></div></div>
+      ${sub ? `<div class="panel" style="padding:18px"><div class="row"><span class="ib" style="width:44px;height:44px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center">${I('crown')}</span><div class="grow"><b style="font-size:17px">FBV Premium — ${PLANS[sub.plan].name}</b><div class="small muted">${sub.store === 'apple' ? 'App Store' : 'Google Play'} · ${F.num(PLANS[sub.plan].price)}đ${PLANS[sub.plan].per}</div></div></div>
           <div class="stat-grid mt-16" style="background:var(--bg-elev-2)"><div><span>Bắt đầu</span><b>${F.date(sub.since)}</b></div><div><span>${sub.autoRenew ? 'Gia hạn' : 'Hết hạn'}</span><b>${F.date(sub.renew)}</b></div></div></div>
         <div class="group"><a class="gi" href="${F.url('reader/pricing.html')}">${I('refresh')}<span class="gl">Đổi gói</span>${I('chevR', 'chev')}</a><button class="gi" id="store">${I('external')}<span class="gl">Quản lý trên ${sub.store === 'apple' ? 'App Store' : 'Google Play'}</span>${I('arrowUR', 'chev')}</button><button class="gi" id="rst">${I('restore')}<span class="gl">Khôi phục giao dịch</span>${I('chevR', 'chev')}</button><a class="gi" href="${F.url('reader/sessions.html')}">${I('video')}<span class="gl">Buổi trao đổi kín</span>${I('chevR', 'chev')}</a></div>
         ${sub.autoRenew ? `<div class="group"><button class="gi center danger" id="cancel"><span class="gl">Hủy gia hạn tự động</span></button></div>` : `<div class="note">${I('info')}<span>Đã tắt gia hạn. Quyền Premium duy trì đến ${F.date(sub.renew)}.</span></div>`}`

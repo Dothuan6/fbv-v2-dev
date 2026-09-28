@@ -5,8 +5,10 @@ Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu tron
 
 ## Ngôn ngữ thiết kế (theo bộ màn mẫu trên Figma)
 
-- App đọc báo cáo tối giản, **nền tối mặc định** (có giao diện Sáng / Theo hệ thống trong Cài đặt → Giao diện).
-- **Điểm nhấn cam** `#FF6719`, **tiêu đề serif** (Spectral), chữ giao diện Inter.
+- App đọc báo cáo tối giản, **nền navy mặc định** (có giao diện Sáng / Theo hệ thống trong Cài đặt → Giao diện).
+- **Logo FBV.ONE** (PNG nền trong suốt): `assets/media/logo.png`, `logo-mark.png`, `favicon.png`, `apple-touch-icon.png`.
+- **Bảng màu lấy từ logo**: Navy `#00254F` (nền) · Vàng `#FECB00` (nút chính, điểm nhấn) · Cyan `#1BACCE` / Xanh `#0D86B8` (thông tin, Verified) · Cam `#FE8C10` (cảnh báo) · Tím `#6C06C8` (Premium, chữ “.ONE”, liên kết ở giao diện Sáng).
+- **Tiêu đề serif** (Spectral), chữ giao diện Inter.
 - **Tab bar 5 mục**: Trang chủ · Thư viện · Thị trường · Phản biện · Hoạt động; avatar góc phải mở Hồ sơ.
 - **Danh sách nhóm bo góc** (grouped list) cho Cài đặt / Tài khoản; hồ sơ kiểu "tên lớn + avatar phải + nút Chỉnh sửa + tab gạch chân".
 - Nút tròn **＋** cam để theo dõi khi onboarding, nút CTA dạng viên thuốc ở đáy màn hình.
@@ -33,7 +35,7 @@ python -m http.server 8080   # hoặc: npx serve .
 ```
 
 - `index.html` — **Hub**: danh mục màn hình (A01–A09, R01–R13, L01–L03, P00–P04, C01–C14) và 8 luồng demo F1–F8.
-- **Nút Demo** (chấm cam ở mép phải; trên desktop ở góc phải dưới): đổi vai trò Khách / Độc giả / Chuyên gia / Thẩm định viên / Biên tập / Quản trị, bật **Phase 2**, đổi giao diện sáng/tối, **Reset demo**.
+- **Nút Demo** (chấm vàng ở mép phải; trên desktop ở góc phải dưới): đổi vai trò Khách / Độc giả / Chuyên gia / Thẩm định viên / Biên tập / Quản trị, bật **Phase 2**, đổi giao diện sáng/tối, **Reset demo**.
 - Tài khoản demo: `minhanh@example.com` — mã OTP: 6 chữ số bất kỳ.
 - Thêm `?p2=1` vào URL bất kỳ để bật Phase 2.
 
