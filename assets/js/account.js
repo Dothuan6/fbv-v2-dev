@@ -1,367 +1,445 @@
 /* =========================================================
-   FBV v2 Prototype — READER (phần 2)
-   Auth (R10–R14) · Tài khoản (R15–R22) · Pháp lý (R23) · Phase 2 (P02–P04)
-   Hub danh mục màn hình · 404
+   FBV v3 Prototype — TÀI KHOẢN · PHẢN BIỆN · HOẠT ĐỘNG · PHÁP LÝ · PHASE 2
+   A01 Đăng nhập · A02 OTP · A03 Điều khoản · A04 Onboarding · A05 Hồ sơ · A06 Sửa hồ sơ
+   A07 Cài đặt · A08 Tài khoản · A09 Xóa tài khoản · R11 Hoạt động · R12 Phản biện · R13 Phiên 1:1
+   L01–L03 Pháp lý · P01 Gói · P02 Thanh toán IAP · P03 Quản lý gói · P04 Trao đổi kín
    ========================================================= */
 (function () {
   const F = window.FBV; const pages = (F.pages = F.pages || {});
-  const $ = (s, r = document) => r.querySelector(s); const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const $ = F.$, $$ = F.$$; const I = F.icon;
   const app = () => document.getElementById('app');
-  const I = F.icon;
-  const nextUrl = () => { const n = F.param('next'); return n && !/^(https?:)?\/\//.test(n) ? n : 'reader/index.html'; };
-  const goNext = () => F.go(nextUrl());
-  const qNext = () => (F.param('next') ? '?next=' + encodeURIComponent(F.param('next')) : '');
-  const afterLogin = (u) => { F.login(u.id); if (!u.consent) F.go('reader/consent.html' + qNext()); else if (!u.onboarded) F.go('reader/onboarding.html' + qNext()); else { sessionStorage.setItem('fbv-flash', 'Đăng nhập thành công. Chào ' + u.name.split(' ').pop() + '!'); goNext(); } };
-  const flash = () => { const m = sessionStorage.getItem('fbv-flash'); if (m) { sessionStorage.removeItem('fbv-flash'); setTimeout(() => F.toast(m), 200); } };
-  document.addEventListener('DOMContentLoaded', flash);
+  const nextUrl = () => F.param('next') || 'reader/index.html';
+  const authPage = (html) => { document.body.classList.add('auth', 'no-tab'); const a = app(); a.className = 'app'; a.innerHTML = html; F.demoBar('reader'); };
+  const authBar = (left, right = '') => `<header class="appbar"><div class="ab-l">${left}</div><div class="ab-t"></div><div class="ab-r">${right}</div></header>`;
 
-  const authLayout = (inner) => `<div class="auth-wrap"><div class="auth-side"><h2>Tri thức tài chính được thẩm định bởi chuyên gia.</h2><p>Báo cáo chuyên sâu về Fintech, Kinh tế Vĩ mô và Vi mô — liên kết trực tiếp với dữ liệu thị trường và không gian phản biện học thuật 1:1.</p>
-    <ul><li>${I('shieldCheck')}Tác giả được chứng thực “Verified by FBV”</li><li>${I('chart')}Dữ liệu chứng khoán & vĩ mô cập nhật định kỳ</li><li>${I('sparkles')}Báo cáo ↔ chỉ số liên kết thông minh</li><li>${I('message')}Trao đổi riêng tư, không công khai mạng xã hội</li></ul></div><div class="auth-main"><div class="auth-card"><div class="auth-logo">${F.brandMark()}</div>${inner}</div></div></div>`;
-
-  /* ================= R10 · Đăng nhập ================= */
+  /* ================= A01 · Đăng nhập / Đăng ký ================= */
   pages.login = () => {
-    if (F.isMember()) { goNext(); return; }
-    F.readerShell('');
-    app().innerHTML = authLayout(`<h1>Chào mừng đến với FBV</h1><p class="lead">Nhập email để nhận mã đăng nhập một lần (OTP). Chưa có tài khoản? Chúng tôi sẽ tạo mới cho bạn.</p>
-      <form id="f" class="stack" novalidate><div class="field"><label for="em">Email</label><input class="input" id="em" type="email" inputmode="email" autocomplete="email" placeholder="ban@vidu.com" style="height:52px"><span class="error-text hidden" id="eme">Email không hợp lệ.</span></div>
-      <button class="btn btn-primary btn-lg btn-block" type="submit">Nhận mã OTP</button></form>
-      <div class="divider">hoặc</div>
-      <div class="stack" style="gap:10px"><button class="btn btn-apple btn-lg btn-block" id="ap">${F.appleIcon()}Đăng nhập với Apple</button><button class="btn btn-social btn-lg btn-block" id="gg">${F.googleIcon()}Tiếp tục với Google</button></div>
-      <a class="btn btn-ghost btn-block mt-12" href="${F.url(nextUrl())}">Tiếp tục với tư cách Khách</a>
-      <div class="demo-hint mt-16"><b>Demo:</b> nhập <b>minhanh@example.com</b> (tài khoản có sẵn) hoặc email bất kỳ để thử luồng đăng ký mới. “Google” đăng nhập tài khoản demo; “Apple” mô phỏng người dùng mới ẩn email.</div>
-      <p class="hint mt-16 center">Bằng việc tiếp tục, bạn đồng ý với <a href="${F.url('reader/terms.html')}" target="_blank">Điều khoản sử dụng</a> và <a href="${F.url('reader/privacy.html')}" target="_blank">Chính sách bảo mật</a>.</p>`);
-    $('#f').onsubmit = (e) => { e.preventDefault(); const v = $('#em').value.trim().toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { $('#eme').classList.remove('hidden'); $('#em').classList.add('invalid'); return; } sessionStorage.setItem('fbv-otp-email', v); F.go('reader/otp.html' + qNext()); };
-    $('#em').oninput = () => { $('#eme').classList.add('hidden'); $('#em').classList.remove('invalid'); };
-    const sso = (prov) => { const m = F.modal({ title: 'Đang kết nối ' + prov + '…', dismissable: false, body: `<div class="ai-loading"><div class="spinner"></div><span>Mô phỏng cửa sổ xác thực ${prov}</span></div>` });
-      setTimeout(() => { m.close(); const db = F.db(); let u;
-        if (prov === 'Google') u = F.user('u1');
-        else { u = { id: F.uid('u'), name: 'Người dùng Apple', email: 'x7k2p9@privaterelay.appleid.com', interests: [], joined: new Date().toISOString(), consent: false, onboarded: false, bookmarks: [], follows: [], blocked: [], status: 'active', provider: 'apple' }; db.users.push(u); F.save(); }
-        afterLogin(u); }, 1200); };
-    $('#gg').onclick = () => sso('Google'); $('#ap').onclick = () => sso('Apple');
-  };
-
-  /* ================= R11 · OTP ================= */
-  pages.otp = () => {
-    F.readerShell('');
-    const email = sessionStorage.getItem('fbv-otp-email');
-    if (!email) { F.go('reader/login.html' + qNext()); return; }
-    app().innerHTML = authLayout(`<h1>Nhập mã xác thực</h1><p class="lead">Mã 6 chữ số đã được gửi tới <b>${F.esc(email)}</b>. Mã có hiệu lực trong 5 phút.</p>
-      <div class="otp" id="otp">${Array.from({ length: 6 }, (_, i) => `<input inputmode="numeric" maxlength="1" aria-label="Chữ số ${i + 1}" autocomplete="${i ? 'off' : 'one-time-code'}">`).join('')}</div><span class="error-text hidden mt-8" id="oe" style="display:block">Vui lòng nhập đủ 6 chữ số.</span>
-      <button class="btn btn-primary btn-lg btn-block mt-24" id="vf">Xác nhận</button>
-      <p class="center small mt-16" id="rs"></p>
-      <p class="center small mt-8"><a href="${F.url('reader/login.html' + qNext())}">Đổi email</a></p>
-      <div class="demo-hint mt-16"><b>Demo:</b> nhập 6 chữ số bất kỳ, ví dụ <b>123456</b>.</div>`);
-    const cells = $$('#otp input');
-    cells.forEach((c, i) => {
-      c.addEventListener('input', () => { c.value = c.value.replace(/\D/g, '').slice(-1); if (c.value && i < 5) cells[i + 1].focus(); $('#oe').classList.add('hidden'); if (cells.every((x) => x.value)) verify(); });
-      c.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !c.value && i > 0) cells[i - 1].focus(); });
-      c.addEventListener('paste', (e) => { const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6); if (t.length) { e.preventDefault(); t.split('').forEach((d, j) => (cells[j].value = d)); cells[Math.min(t.length, 5)].focus(); if (t.length === 6) verify(); } });
-    });
-    cells[0].focus();
-    let left = 60; const tick = () => { $('#rs').innerHTML = left > 0 ? `Gửi lại mã sau <b class="num">${left}s</b>` : `<a href="#" id="rsa">Gửi lại mã</a>`; const a = $('#rsa'); if (a) a.onclick = (e) => { e.preventDefault(); left = 60; F.toast('Đã gửi lại mã tới ' + email); tick(); }; if (left-- > 0) setTimeout(tick, 1000); }; tick();
-    let busy = false;
-    const verify = () => {
-      if (busy) return; if (!cells.every((x) => x.value)) { $('#oe').classList.remove('hidden'); return; }
-      busy = true; $('#vf').innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;border-color:rgba(255,255,255,.4);border-top-color:#fff"></span>';
-      setTimeout(() => { const db = F.db(); let u = db.users.find((x) => x.email === email && x.status !== 'deleted');
-        if (!u) { const nm = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()); u = { id: F.uid('u'), name: nm, email, interests: [], joined: new Date().toISOString(), consent: false, onboarded: false, bookmarks: [], follows: [], blocked: [], status: 'active' }; db.users.push(u); F.save(); }
-        if (u.status === 'locked') { busy = false; $('#vf').textContent = 'Xác nhận'; F.modal({ title: 'Tài khoản đã bị khóa', body: '<p class="sub">Tài khoản vi phạm Điều khoản sử dụng. Liên hệ support@fbv.example nếu bạn cho rằng đây là nhầm lẫn.</p>', actions: [{ label: 'Đã hiểu', cls: 'btn-primary' }] }); return; }
-        sessionStorage.removeItem('fbv-otp-email'); afterLogin(u); }, 700);
+    if (F.me()) { F.go(nextUrl()); return; }
+    authPage(`${authBar(`<a class="icon-btn" href="${F.url('reader/index.html')}" aria-label="Đóng">${I('x')}</a>`)}
+      <div class="auth-wrap"><div class="auth-hero">${F.logoMark()}<h1>Nghiên cứu kinh tế – tài chính, thẩm định bởi chuyên gia</h1><p>Đăng nhập hoặc tạo tài khoản FBV để lưu báo cáo, theo dõi chuyên gia và gửi phản biện 1:1.</p></div>
+      <div class="stack">
+        <button class="btn btn-white btn-pill btn-block" data-sso="apple">${F.appleIcon()}Tiếp tục với Apple</button>
+        <button class="btn btn-gray btn-pill btn-block" data-sso="google">${F.googleIcon()}Tiếp tục với Google</button>
+        <div class="or">hoặc</div>
+        <div class="field"><label for="em">Email</label><input class="input" id="em" type="email" inputmode="email" autocomplete="email" placeholder="ban@example.com"><span class="err hidden" id="eme">Email chưa hợp lệ.</span></div>
+        <button class="btn btn-primary btn-pill btn-block" id="go">Tiếp tục với Email</button>
+        <p class="hint center">Chúng tôi gửi mã OTP 6 chữ số — không cần mật khẩu. Tài khoản demo: <b>minhanh@example.com</b></p>
+        <a class="btn btn-ghost btn-block" href="${F.url('reader/index.html')}">Tiếp tục ở chế độ Khách</a>
+        <p class="legal-small">Khi tiếp tục, bạn đồng ý với <a href="${F.url('reader/terms.html')}">Điều khoản sử dụng (EULA)</a> và <a href="${F.url('reader/privacy.html')}">Chính sách bảo mật</a> của FBV.</p>
+      </div></div>`);
+    $('#go').onclick = () => {
+      const v = $('#em').value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { $('#eme').classList.remove('hidden'); $('#em').classList.add('invalid'); return; }
+      F.go('reader/otp.html?e=' + encodeURIComponent(v) + '&next=' + encodeURIComponent(nextUrl()));
     };
-    $('#vf').onclick = verify;
+    $('#em').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#go').click(); });
+    $$('[data-sso]').forEach((b) => (b.onclick = () => {
+      const p = b.dataset.sso === 'apple' ? 'Apple' : 'Google';
+      const m = F.modal({ title: 'Đăng nhập với ' + p, dismissable: false, body: `<div class="empty" style="padding:16px 0"><div class="spinner"></div><p class="mt-12">Đang xác thực với ${p}… (mô phỏng)</p></div>` });
+      setTimeout(() => { m.close(); const u = F.user('u1'); u.consent = true; u.onboarded = true; u.provider = p; F.login('u1'); F.toast('Đã đăng nhập bằng ' + p); setTimeout(() => F.go(nextUrl()), 300); }, 1100);
+    }));
   };
 
-  /* ================= R12 · Đồng ý điều khoản ================= */
+  /* ================= A02 · Xác thực OTP ================= */
+  pages.otp = () => {
+    const email = F.param('e') || 'minhanh@example.com';
+    authPage(`${authBar(`<button class="icon-btn" id="bk" aria-label="Quay lại">${I('chevL')}</button>`)}
+      <div class="auth-wrap"><div class="auth-hero"><h1>Nhập mã xác thực</h1><p>Mã 6 chữ số đã được gửi tới <b style="color:var(--text)">${F.esc(email)}</b>. Mã có hiệu lực trong 10 phút.</p></div>
+      <div class="stack"><div class="otp" id="otp">${Array.from({ length: 6 }, (_, i) => `<input inputmode="numeric" maxlength="1" aria-label="Chữ số ${i + 1}" autocomplete="${i ? 'off' : 'one-time-code'}">`).join('')}</div>
+        <span class="err hidden" id="oe">Vui lòng nhập đủ 6 chữ số.</span>
+        <button class="btn btn-primary btn-pill btn-block" id="ok">Xác nhận</button>
+        <div class="row between small"><span class="muted">Không nhận được mã?</span><button class="btn-text" id="rs" disabled style="opacity:.5">Gửi lại (30s)</button></div>
+        <div class="note">${I('info')}<span>Prototype: nhập 6 chữ số bất kỳ.</span></div></div></div>`);
+    $('#bk').onclick = () => F.back('reader/login.html');
+    const ins = $$('#otp input');
+    ins.forEach((inp, i) => {
+      inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(-1); if (inp.value && ins[i + 1]) ins[i + 1].focus(); if (ins.every((x) => x.value)) $('#ok').click(); });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !inp.value && ins[i - 1]) ins[i - 1].focus(); });
+      inp.addEventListener('paste', (e) => { const t = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6); if (t.length) { e.preventDefault(); ins.forEach((x, j) => (x.value = t[j] || '')); } });
+    });
+    setTimeout(() => ins[0].focus(), 100);
+    let s = 30; const rs = $('#rs'); const tk = setInterval(() => { s--; rs.textContent = s > 0 ? `Gửi lại (${s}s)` : 'Gửi lại mã'; if (s <= 0) { clearInterval(tk); rs.disabled = false; rs.style.opacity = 1; } }, 1000);
+    rs.onclick = () => F.toast('Đã gửi lại mã tới ' + email);
+    $('#ok').onclick = () => {
+      if (!ins.every((x) => /\d/.test(x.value))) { $('#oe').classList.remove('hidden'); return; }
+      const db = F.db(); let u = db.users.find((x) => x.email === email);
+      if (!u) { u = { id: F.uid('u'), name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), email, interests: [], joined: new Date().toISOString(), consent: false, onboarded: false, bookmarks: [], follows: [], blocked: [], history: [], status: 'active', provider: 'Email' }; db.users.push(u); }
+      F.login(u.id);
+      if (!u.consent) F.go('reader/consent.html?next=' + encodeURIComponent(nextUrl()));
+      else if (!u.onboarded) F.go('reader/onboarding.html?next=' + encodeURIComponent(nextUrl()));
+      else { F.toast('Chào mừng trở lại, ' + u.name.split(' ').pop()); setTimeout(() => F.go(nextUrl()), 300); }
+    };
+  };
+
+  /* ================= A03 · Đồng ý điều khoản ================= */
   pages.consent = () => {
     const me = F.me(); if (!me) { F.go('reader/login.html'); return; }
-    F.readerShell('');
-    app().innerHTML = authLayout(`<h1>Trước khi bắt đầu</h1><p class="lead">FBV là cộng đồng học thuật. Vui lòng xác nhận các điều khoản dưới đây.</p>
-      <div class="set-list">
-        <label class="set-item checkbox" style="cursor:pointer"><input type="checkbox" id="c1"><span>Tôi đồng ý với <a href="${F.url('reader/terms.html')}" target="_blank">Điều khoản sử dụng (EULA)</a> và <a href="${F.url('reader/privacy.html')}" target="_blank">Chính sách bảo mật</a>. <b>(bắt buộc)</b></span></label>
-        <label class="set-item checkbox" style="cursor:pointer"><input type="checkbox" id="c2"><span>Tôi hiểu nội dung trên FBV mang tính nghiên cứu, <b>không phải khuyến nghị đầu tư</b>. <b>(bắt buộc)</b></span></label>
-        <label class="set-item checkbox" style="cursor:pointer"><input type="checkbox" id="c3"><span>Nhận bản tin nghiên cứu hằng tuần qua email.</span></label></div>
-      <div class="alert warn mt-16">${I('alert')}<span>FBV <b>không dung thứ</b> nội dung xúc phạm, quấy rối, spam hoặc lôi kéo đầu tư trong các phiên phản biện. Tài khoản vi phạm có thể bị khóa.</span></div>
-      <div class="ctabar"><button class="btn btn-primary btn-lg btn-block" id="go" disabled>Đồng ý và tiếp tục</button></div>`);
-    const upd = () => { $('#go').disabled = !($('#c1').checked && $('#c2').checked); };
-    ['#c1', '#c2'].forEach((s) => ($(s).onchange = upd));
-    $('#go').onclick = () => { me.consent = true; me.newsletter = $('#c3').checked; me.consentAt = new Date().toISOString(); F.save(); F.go(me.onboarded ? nextUrl() : 'reader/onboarding.html' + qNext()); };
+    authPage(`${authBar('')}
+      <div class="auth-wrap" style="padding-bottom:140px"><div class="auth-hero">${F.logoMark()}<h1>Trước khi bắt đầu</h1><p>FBV là không gian nghiên cứu học thuật. Vui lòng xác nhận các điều khoản dưới đây.</p></div>
+      <div class="group" style="padding:4px 0">
+        <label class="gi"><input type="checkbox" id="c1"><span class="gl">Tôi đồng ý với Điều khoản sử dụng (EULA)<small><a class="link" href="${F.url('reader/terms.html')}">Đọc điều khoản</a> · Bắt buộc</small></span></label>
+        <label class="gi"><input type="checkbox" id="c2"><span class="gl">Tôi đã đọc Chính sách bảo mật<small><a class="link" href="${F.url('reader/privacy.html')}">Đọc chính sách</a> · Bắt buộc</small></span></label>
+        <label class="gi"><input type="checkbox" id="c3"><span class="gl">Tôi hiểu nội dung FBV không phải khuyến nghị đầu tư<small><a class="link" href="${F.url('reader/disclaimer.html')}">Miễn trừ trách nhiệm</a> · Bắt buộc</small></span></label>
+        <label class="gi"><input type="checkbox" id="c4"><span class="gl">Nhận bản tin nghiên cứu qua email<small>Không bắt buộc · tắt bất kỳ lúc nào</small></span></label>
+      </div><p class="hint mt-12">Bạn có thể xóa tài khoản trực tiếp trong ứng dụng: Cài đặt → Tài khoản → Xóa tài khoản.</p></div>
+      <div class="bottom-cta"><div class="inner"><button class="btn btn-primary btn-pill btn-block" id="ok" disabled>Đồng ý và tiếp tục</button></div></div>`);
+    const upd = () => { $('#ok').disabled = !['c1', 'c2', 'c3'].every((id) => $('#' + id).checked); };
+    $$('input[type=checkbox]').forEach((c) => (c.onchange = upd));
+    $('#ok').onclick = () => { me.consent = true; me.marketing = $('#c4').checked; F.save(); F.go('reader/onboarding.html?next=' + encodeURIComponent(nextUrl())); };
   };
 
-  /* ================= R13 · Onboarding ================= */
+  /* ================= A04 · Onboarding (Tùy chỉnh trải nghiệm) ================= */
+  const STREAMS = [['fintech', 'Fintech', 'Ngân hàng số, thanh toán, tài sản mã hóa, sandbox', 'cpu', '#9B7BFF'], ['macro', 'Kinh tế Vĩ mô', 'Lãi suất, tỷ giá, lạm phát, GDP, FDI', 'globe', '#5AA9FF'], ['micro', 'Kinh tế Vi mô', 'Doanh nghiệp, ngành, thị trường vốn, hành vi', 'building', '#2FD06E']];
   pages.onboarding = () => {
     const me = F.me(); if (!me) { F.go('reader/login.html'); return; }
-    F.readerShell('');
-    F.setActions(`<button class="btn btn-ghost btn-sm" id="sk">Bỏ qua</button>`);
-    const T = [['fintech', 'Fintech', 'Ngân hàng số, thanh toán, tài sản mã hóa, pháp lý công nghệ tài chính', 'cpu', '#EEF2FF', '#4338CA'], ['macro', 'Kinh tế Vĩ mô', 'Lãi suất, tỷ giá, lạm phát, tăng trưởng, chính sách tiền tệ', 'globe', '#E0F2FE', '#0369A1'], ['micro', 'Kinh tế Vi mô', 'Doanh nghiệp, ngành, thị trường vốn, hành vi nhà đầu tư', 'building', '#ECFDF5', '#047857']];
-    const sel = new Set(me.interests);
-    app().innerHTML = `<div class="page narrow" style="max-width:820px"><p class="small muted">Bước cuối · Cá nhân hóa</p><h1 class="mt-8">Bạn quan tâm lĩnh vực nào?</h1><p class="sub mt-8 mb-24">Chọn ít nhất một chủ đề để FBV ưu tiên báo cáo phù hợp. Có thể đổi bất cứ lúc nào trong mục Tôi.</p>
-      <div class="topic-grid">${T.map((t) => `<button class="topic ${sel.has(t[0]) ? 'on' : ''}" data-t="${t[0]}" aria-pressed="${sel.has(t[0])}"><span class="ti" style="background:${t[4]};color:${t[5]};flex:none">${I(t[3])}</span><span class="tx"><b>${t[1]}</b><span>${t[2]}</span></span></button>`).join('')}</div>
-      <div class="ctabar"><button class="btn btn-primary btn-lg btn-block" id="go" ${sel.size ? '' : 'disabled'}>Bắt đầu khám phá ${I('arrowR')}</button></div></div>`;
-    $$('.topic').forEach((b) => (b.onclick = () => { const t = b.dataset.t; sel.has(t) ? sel.delete(t) : sel.add(t); b.classList.toggle('on'); b.setAttribute('aria-pressed', sel.has(t)); $('#go').disabled = !sel.size; }));
-    const done = () => { me.interests = [...sel]; me.onboarded = true; F.save(); sessionStorage.setItem('fbv-flash', 'Chào mừng bạn đến với FBV!'); goNext(); };
-    $('#go').onclick = done; $('#sk').onclick = done;
-  };
-
-  /* ---------- Member-only guard ---------- */
-  const needMember = (active) => {
-    if (F.isMember()) return true;
-    F.readerShell(active || '');
-    app().innerHTML = `<div class="page narrow"><div class="card">${F.empty('lock', 'Vui lòng đăng nhập', 'Trang này dành cho thành viên FBV. Đăng nhập để tiếp tục.', `<a class="btn btn-primary" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập / Đăng ký</a>`)}</div></div>`;
-    return false;
-  };
-  const accLayout = (active, inner) => `<div class="page narrow">${inner}</div>`;
-  const chev = () => I('chevR', 'chev');
-
-  /* ================= R15 · Tôi (Account hub) ================= */
-  pages.account = () => {
-    F.readerShell('me');
-    const me = F.me(); const db = F.db(); const s = F.session();
-    const legalList = `<div class="glabel">Pháp lý & Hỗ trợ</div><div class="set-list">
-      <a class="set-item" href="${F.url('reader/terms.html')}"><span class="si">${I('note')}</span><span class="grow">Điều khoản sử dụng (EULA)</span>${chev()}</a>
-      <a class="set-item" href="${F.url('reader/privacy.html')}"><span class="si">${I('shield')}</span><span class="grow">Chính sách bảo mật</span>${chev()}</a>
-      <a class="set-item" href="${F.url('reader/disclaimer.html')}"><span class="si">${I('info')}</span><span class="grow">Miễn trừ trách nhiệm đầu tư</span>${chev()}</a>
-      <div class="set-item"><span class="si">${I('mail')}</span><span class="grow">Liên hệ hỗ trợ<div class="xs muted">support@fbv.example</div></span></div></div>`;
-    if (!me) {
-      app().innerHTML = accLayout('', `<div class="me-card"><span class="avatar lg" style="background:var(--field);color:var(--text-3)">${I('user').replace('<svg', '<svg style="width:40px;height:40px"')}</span><div class="grow"><b>Khách</b><span class="small sub">Đăng nhập để lưu bài, theo dõi chuyên gia và gửi phản biện.</span></div></div>
-        <a class="btn btn-primary btn-lg btn-block mt-12" href="${F.url('reader/login.html?next=' + encodeURIComponent('reader/account.html'))}">Đăng nhập / Đăng ký</a>
-        ${s.phase2 ? `<div class="glabel">Hội viên</div><div class="set-list"><a class="set-item" href="${F.url('reader/pricing.html')}"><span class="si" style="background:#FEF3C7;color:#B45309">${I('crown')}</span><span class="grow">FBV Premium</span>${chev()}</a></div>` : ''}
-        ${legalList}`);
-      return;
-    }
-    const nInq = db.inquiries.filter((q) => q.reader === me.id && !me.blocked.includes(q.expert)).length; const unread = db.notifications.filter((n) => n.user === me.id && !n.read).length;
-    app().innerHTML = accLayout('', `<div class="me-card">${F.avatar(me, 'lg')}<div class="grow" style="min-width:0"><b>${F.esc(me.name)}</b><span class="small sub" style="display:block;overflow:hidden;text-overflow:ellipsis">${F.esc(me.email)}</span>${F.hasSub() ? '<span class="badge premium mt-8">Premium</span>' : `<span class="xs muted">Thành viên từ ${F.date(me.joined)}</span>`}</div><button class="icon-btn" id="edit" aria-label="Chỉnh sửa hồ sơ">${I('edit')}</button></div>
-      <div class="me-stats"><a href="${F.url('reader/bookmarks.html')}"><b class="num">${me.bookmarks.length}</b><span>Tài liệu lưu</span></a><a href="${F.url('reader/bookmarks.html?t=hl')}"><b class="num">${me.highlights.length}</b><span>Đánh dấu</span></a><a href="${F.url('reader/bookmarks.html?t=topics')}"><b class="num">${me.followTopics.length}</b><span>Chủ đề theo dõi</span></a></div>
-      <div class="glabel">Hoạt động</div><div class="set-list">
-        <a class="set-item" href="${F.url('reader/bookmarks.html')}"><span class="si">${I('bookmark')}</span><span class="grow">Sổ tay tri thức<div class="xs muted">Tài liệu, đánh dấu, khái niệm, chủ đề</div></span><span class="val">${me.bookmarks.length + me.highlights.length + me.savedConcepts.length}</span>${chev()}</a>
-        <a class="set-item" href="${F.url('reader/inquiries.html')}"><span class="si">${I('message')}</span><span class="grow">Phản biện của tôi</span><span class="val">${F.quotaInfo().unlimited ? 'Không giới hạn' : F.quotaInfo().used + '/' + F.quotaInfo().lim + ' lượt'}</span>${chev()}</a>
-        <a class="set-item" href="${F.url('reader/notifications.html')}"><span class="si">${I('bell')}</span><span class="grow">Thông báo</span>${unread ? `<span class="badge i-new">${unread} mới</span>` : ''}${chev()}</a></div>
-      <div class="glabel">Tài khoản</div><div class="set-list">
-        <button class="set-item" id="ints"><span class="si">${I('layers')}</span><span class="grow">Lĩnh vực quan tâm</span><span class="val">${me.interests.map((x) => ({ fintech: 'Fintech', macro: 'Vĩ mô', micro: 'Vi mô' }[x])).join(', ') || 'Chưa chọn'}</span>${chev()}</button>
-        ${s.phase2 ? `<a class="set-item" href="${F.url(F.hasSub() ? 'reader/subscription.html' : 'reader/pricing.html')}"><span class="si" style="background:#FEF3C7;color:#B45309">${I('crown')}</span><span class="grow">${F.hasSub() ? 'Gói của tôi' : 'Nâng cấp Premium'}</span>${chev()}</a>` : ''}
-        <a class="set-item" href="${F.url('reader/settings.html')}"><span class="si">${I('settings')}</span><span class="grow">Cài đặt & Quyền riêng tư</span>${chev()}</a></div>
-      <div id="fol">${me.follows.length ? `<div class="glabel">Chuyên gia đang theo dõi</div><div class="hscroll">${me.follows.map(F.expert).filter(Boolean).map(F.expMini).join('')}</div>` : ''}</div>
-      ${legalList}
-      <div class="set-list mt-24"><button class="set-item" id="lo" style="justify-content:center;color:var(--danger);font-weight:600">${I('logout').replace('<svg', '<svg style="width:18px;height:18px"')}Đăng xuất</button></div>`);
-    const editSheet = (focusInts) => {
-      const sel = new Set(me.interests);
-      F.modal({ title: focusInts ? 'Lĩnh vực quan tâm' : 'Chỉnh sửa hồ sơ', body: `<div class="stack">${focusInts ? '' : `<div class="field"><label for="nm">Họ và tên</label><input class="input" id="nm" value="${F.esc(me.name)}" maxlength="60"></div><div class="field"><label>Email</label><input class="input" value="${F.esc(me.email)}" disabled><span class="hint">Dùng để đăng nhập bằng mã OTP. Liên hệ hỗ trợ để thay đổi.</span></div>`}
-        <div class="field"><span class="label">Lĩnh vực quan tâm</span><div class="chips" id="ic">${[['fintech', 'Fintech'], ['macro', 'Kinh tế Vĩ mô'], ['micro', 'Kinh tế Vi mô']].map((t) => `<button type="button" class="chip check ${sel.has(t[0]) ? 'active' : ''}" data-t="${t[0]}">${t[1]}</button>`).join('')}</div></div>
-        ${focusInts ? '' : `<div class="field"><span class="label">Tài khoản liên kết</span><div class="stack" style="gap:8px"><div class="file-pill">${F.appleIcon().replace('<svg', '<svg style="width:20px;height:20px"')}<span class="grow">Apple</span><span class="small ${me.provider === 'apple' ? 'up' : 'muted'}">${me.provider === 'apple' ? 'Đã liên kết' : 'Chưa liên kết'}</span></div><div class="file-pill">${F.googleIcon().replace('<svg', '<svg style="width:20px;height:20px"')}<span class="grow">Google</span><span class="small ${me.id === 'u1' ? 'up' : 'muted'}">${me.id === 'u1' ? 'Đã liên kết' : 'Chưa liên kết'}</span></div></div></div>`}</div>`,
-        actions: [{ label: 'Hủy' }, { label: 'Lưu', cls: 'btn-primary', onClick: (c, el) => { const n = $('#nm', el); if (n && n.value.trim().length < 2) { F.toast('Vui lòng nhập họ tên hợp lệ', 'error'); return false; } if (!sel.size) { F.toast('Chọn ít nhất một lĩnh vực', 'error'); return false; } if (n) me.name = n.value.trim(); me.interests = [...sel]; F.save(); sessionStorage.setItem('fbv-flash', 'Đã lưu thay đổi'); location.reload(); } }],
-        onOpen: (el) => $$('#ic .chip', el).forEach((b) => (b.onclick = () => { const t = b.dataset.t; sel.has(t) ? sel.delete(t) : sel.add(t); b.classList.toggle('active'); })) });
+    let step = 1; const sel = new Set(me.interests); const fol = new Set(me.follows);
+    const draw = () => {
+      const steps = `<div class="steps">${[1, 2, 3].map((i) => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}</div>`;
+      let body = '', cta = '';
+      if (step === 1) {
+        body = `<div class="ob-head">${F.logoMark()}<h1>Bạn quan tâm lĩnh vực nào?</h1><p>Chọn một hoặc nhiều luồng nghiên cứu. Bảng tin sẽ ưu tiên nội dung phù hợp.</p></div>
+          ${STREAMS.map((s) => `<div class="ob-item"><span class="ob-ico" style="background:${s[4]}">${I(s[3])}</span><div class="t"><b>${s[1]}</b><p>${s[2]}</p></div><button class="plus-btn ${sel.has(s[0]) ? 'on' : ''}" data-s="${s[0]}" aria-label="${sel.has(s[0]) ? 'Bỏ chọn' : 'Chọn'} ${s[1]}">${I(sel.has(s[0]) ? 'check' : 'plus')}</button></div>`).join('')}`;
+        cta = `<button class="btn btn-primary btn-pill btn-block" id="nx" ${sel.size ? '' : 'disabled'}>Tiếp tục</button>`;
+      } else if (step === 2) {
+        body = `<div class="ob-head">${F.logoMark()}<h1>Tùy chỉnh trải nghiệm</h1><p>Theo dõi chuyên gia để nhận báo cáo mới của họ.</p></div>
+          ${F.db().experts.map((e) => `<div class="ob-item">${F.avatar(e, 'md')}<div class="t"><b><span class="ellipsis">${F.esc(e.name)}</span>${F.vb(e)}</b><small class="ellipsis">${F.esc(e.title)}</small><p class="clamp2">${F.esc(e.bio)}</p></div><button class="plus-btn ${fol.has(e.id) ? 'on' : ''}" data-e="${e.id}" aria-label="${fol.has(e.id) ? 'Bỏ theo dõi' : 'Theo dõi'} ${F.esc(e.name)}">${I(fol.has(e.id) ? 'check' : 'plus')}</button></div>`).join('')}`;
+        cta = `<button class="btn btn-primary btn-pill btn-block" id="nx">${fol.size ? `Tiếp tục · theo dõi ${fol.size}` : 'Bỏ qua'}</button>`;
+      } else {
+        body = `<div class="ob-head" style="text-align:center;padding-top:40px"><div class="empty" style="padding:0 0 12px"><div class="ico" style="width:84px;height:84px;background:var(--accent-soft);color:var(--accent)">${I('bell')}</div></div><h1>Bật thông báo</h1><p>Nhận thông báo khi chuyên gia trả lời phản biện của bạn hoặc xuất bản báo cáo mới.</p></div>`;
+        cta = `<button class="btn btn-primary btn-pill btn-block" id="nx">Bật thông báo</button><button class="btn btn-ghost btn-block" id="skip">Để sau</button>`;
+      }
+      authPage(`${authBar(step > 1 ? `<button class="icon-btn" id="bk" aria-label="Quay lại">${I('chevL')}</button>` : '', step < 3 ? `<button class="txt-btn" id="skipAll">Bỏ qua</button>` : '')}${steps}<div style="padding-bottom:150px;max-width:600px;margin:0 auto">${body}</div><div class="bottom-cta"><div class="inner">${cta}</div></div>`);
+      const bk = $('#bk'); if (bk) bk.onclick = () => { step--; draw(); };
+      $$('[data-s]').forEach((b) => (b.onclick = () => { const k = b.dataset.s; sel.has(k) ? sel.delete(k) : sel.add(k); draw(); }));
+      $$('[data-e]').forEach((b) => (b.onclick = () => { const k = b.dataset.e; fol.has(k) ? fol.delete(k) : fol.add(k); draw(); }));
+      const done = (notif) => { me.interests = Array.from(sel); me.follows = Array.from(fol); me.onboarded = true; me.prefs = Object.assign(me.prefs || {}, { answer: notif, report: notif, follow: notif }); F.save(); F.toast('Thiết lập xong! Chào mừng đến FBV'); setTimeout(() => F.go(nextUrl()), 300); };
+      $('#nx').onclick = () => { if (step < 3) { step++; draw(); } else done(true); };
+      const sk = $('#skip'); if (sk) sk.onclick = () => done(false);
+      const sa = $('#skipAll'); if (sa) sa.onclick = () => done(false);
     };
-    $('#edit').onclick = () => editSheet(false); $('#ints').onclick = () => editSheet(true);
-    $('#lo').onclick = () => { F.logout(); sessionStorage.setItem('fbv-flash', 'Đã đăng xuất'); F.go('reader/index.html'); };
+    draw();
   };
 
-  /* ================= R17 · Hộp phản biện ================= */
+  /* ================= A05 · Hồ sơ cá nhân ================= */
+  pages.account = () => {
+    const me = F.me();
+    const v = F.shell({ side: 'me', bar: 'back', back: 'reader/index.html', title: '', right: `<a class="icon-btn" href="${F.url('reader/settings.html')}" aria-label="Cài đặt">${I('settings')}</a>` });
+    if (!me) { v.innerHTML = F.gate('user', 'Hồ sơ của bạn', 'Đăng nhập để quản lý hồ sơ, lĩnh vực quan tâm và hoạt động đọc.'); return; }
+    const fol = me.follows.map(F.expert).filter(Boolean); const myQ = F.db().inquiries.filter((q) => q.reader === me.id);
+    let tab = F.param('t') || 'activity';
+    v.innerHTML = `<div class="prof"><div class="prof-top"><div class="t"><h1>${F.esc(me.name)}</h1><div class="h">@${F.esc(me.handle)}</div></div>${F.avatar(me, 'xl')}</div>
+      ${me.bio ? `<p class="bio">${F.esc(me.bio)}</p>` : ''}
+      <div class="interest-row">${me.interests.length ? me.interests.map((s) => `<span class="tag accent">${F.STREAM[s]}</span>`).join('') : '<span class="tag">Chưa chọn lĩnh vực</span>'}${F.hasSub() ? `<span class="tag prem">${I('crown', 'i-xs')}Premium</span>` : ''}</div>
+      <a class="meta" href="${F.url('reader/bookmarks.html?t=following')}">${fol.length ? `<span class="stk">${fol.slice(0, 3).map((e) => F.avatar(e, 'xs')).join('')}</span>` : ''}<span>Đang theo dõi <b style="color:var(--text)">${fol.length}</b> chuyên gia</span></a>
+      <div class="btns"><a class="btn btn-gray" href="${F.url('reader/profile-edit.html')}">Chỉnh sửa hồ sơ</a></div></div>
+      <div class="utabs mt-16" id="tb"></div><div id="tv"></div>`;
+    const draw = () => {
+      const hist = me.history.map(F.report).filter(Boolean); const saved = me.bookmarks.map(F.report).filter(Boolean);
+      $('#tb').innerHTML = [['activity', 'Hoạt động'], ['inq', 'Phản biện'], ['saved', 'Đã lưu']].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}</button>`).join('');
+      $$('#tb [data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));
+      const tv = $('#tv');
+      if (tab === 'activity') tv.innerHTML = hist.length ? `<div class="sec"><h2>Đã đọc gần đây</h2><a href="${F.url('reader/bookmarks.html?t=history')}">Xem tất cả</a></div>` + hist.slice(0, 5).map((r) => F.postCompact(r, { date: 'ago' })).join('') : F.empty('read', 'Chưa có hoạt động', 'Báo cáo bạn đọc và phản biện bạn gửi sẽ xuất hiện tại đây.');
+      else if (tab === 'inq') tv.innerHTML = myQ.length ? `<div class="chat-list">${myQ.map(inqRow).join('')}</div>` : F.empty('chat', 'Chưa có phản biện', 'Bôi đen đoạn văn trong báo cáo để gửi câu hỏi tới chuyên gia.');
+      else tv.innerHTML = saved.length ? saved.map((r) => F.postCompact(r)).join('') : F.empty('bookmark', 'Chưa lưu báo cáo nào', 'Nhấn biểu tượng lưu để đọc lại sau.');
+    };
+    draw();
+  };
+
+  /* ================= A06 · Chỉnh sửa hồ sơ ================= */
+  pages.profileEdit = () => {
+    const me = F.me(); if (!me) { F.go('reader/login.html?next=' + encodeURIComponent('reader/profile-edit.html')); return; }
+    const v = F.shell({ side: 'me', bar: 'back', notab: true, title: 'Chỉnh sửa hồ sơ', left: `<button class="txt-btn" id="cc">Hủy</button>`, right: `<button class="txt-btn acc" id="sv" disabled>Lưu</button>` });
+    v.innerHTML = `<div class="page stack lg" style="padding-top:8px">
+      <div class="center"><div class="av-wrap" style="margin:8px auto 0">${F.avatar(me, 'xl').replace('av me xl', 'av me xl" style="--s:112px')}<button class="av-cam" id="cam" aria-label="Đổi ảnh đại diện">${I('camera')}</button></div></div>
+      <div class="field"><label for="nm">Họ và tên</label><input class="input" id="nm" value="${F.esc(me.name)}" maxlength="60"></div>
+      <div class="field"><label for="hd">Tên hiển thị</label><div class="input-group"><span class="pre">fbv.vn/@</span><input class="input" id="hd" value="${F.esc(me.handle)}" maxlength="30"></div></div>
+      <div class="field"><div class="row between"><label for="bio" class="label">Giới thiệu</label><span class="hint num" id="bc">${me.bio.length}/250</span></div><textarea class="textarea" id="bio" maxlength="250" placeholder="Giới thiệu ngắn về bạn…">${F.esc(me.bio)}</textarea></div>
+      <div class="field"><label>Email</label><input class="input" value="${F.esc(me.email)}" readonly></div>
+      <div class="group">
+        <button class="gi" id="gInt">${I('sliders')}<span class="gl">Lĩnh vực quan tâm</span><span class="gv">${me.interests.length}</span>${I('chevR', 'chev')}</button>
+        <a class="gi" href="${F.url('reader/bookmarks.html?t=following')}">${I('users')}<span class="gl">Chuyên gia theo dõi</span><span class="gv">${me.follows.length}</span>${I('chevR', 'chev')}</a>
+        <button class="gi" id="gBlk">${I('ban')}<span class="gl">Chuyên gia đã chặn</span><span class="gv">${me.blocked.length}</span>${I('chevR', 'chev')}</button>
+      </div></div>`;
+    const dirty = () => { $('#sv').disabled = $('#nm').value.trim() === me.name && $('#hd').value.trim() === me.handle && $('#bio').value === me.bio; };
+    ['nm', 'hd', 'bio'].forEach((id) => $('#' + id).addEventListener('input', () => { if (id === 'bio') $('#bc').textContent = $('#bio').value.length + '/250'; dirty(); }));
+    $('#cc').onclick = () => F.back('reader/account.html');
+    $('#sv').onclick = () => { const n = $('#nm').value.trim(); if (n.length < 2) { $('#nm').classList.add('invalid'); F.toast('Họ tên tối thiểu 2 ký tự', 'error'); return; } me.name = n; me.handle = $('#hd').value.trim().replace(/[^a-z0-9._]/gi, '') || me.handle; me.bio = $('#bio').value; F.save(); F.toast('Đã lưu hồ sơ'); setTimeout(() => F.go('reader/account.html'), 300); };
+    $('#cam').onclick = () => F.menu([{ icon: 'camera', label: 'Chụp ảnh', onClick: () => F.toast('Mô phỏng: mở camera', 'info') }, { icon: 'image', label: 'Chọn từ thư viện', onClick: () => F.toast('Mô phỏng: mở thư viện ảnh', 'info') }, { icon: 'trash', label: 'Xóa ảnh hiện tại', danger: true, onClick: () => F.toast('Đã xóa ảnh đại diện', 'info') }], 'Ảnh đại diện');
+    $('#gInt').onclick = () => interestSheet(() => location.reload());
+    $('#gBlk').onclick = () => blockedSheet();
+  };
+  const interestSheet = (after) => { const me = F.me(); const sel = new Set(me.interests);
+    F.modal({ title: 'Lĩnh vực quan tâm', body: `<p class="muted small mb-12">Chọn luồng nghiên cứu để cá nhân hóa bảng tin.</p><div class="group">${STREAMS.map((s) => `<label class="gi"><span class="ob-ico" style="width:36px;height:36px;border-radius:10px;background:${s[4]}">${I(s[3], 'i-sm')}</span><span class="gl">${s[1]}<small>${s[2]}</small></span><input type="checkbox" value="${s[0]}" ${sel.has(s[0]) ? 'checked' : ''}></label>`).join('')}</div>`,
+      actions: [{ label: 'Hủy' }, { label: 'Lưu', cls: 'btn-primary', onClick: (c, el) => { me.interests = $$('input:checked', el).map((x) => x.value); F.save(); F.toast('Đã cập nhật lĩnh vực quan tâm'); after && after(); } }] }); };
+  const blockedSheet = () => { const me = F.me(); const draw = (el) => { $('.sheet-body', el).innerHTML = me.blocked.length ? `<div class="group">${me.blocked.map((id) => { const e = F.expert(id) || F.person(id); return `<div class="gi">${F.avatar(e, 'sm')}<span class="gl">${F.esc(e.name)}</span><button class="btn btn-gray btn-xs" data-ub="${id}">Bỏ chặn</button></div>`; }).join('')}</div>` : `<div class="empty" style="padding:16px 0"><div class="ico">${I('ban')}</div><h3>Chưa chặn ai</h3><p>Bạn có thể chặn chuyên gia từ hồ sơ hoặc trong phiên phản biện.</p></div>`; $$('[data-ub]', el).forEach((b) => (b.onclick = () => { me.blocked = me.blocked.filter((x) => x !== b.dataset.ub); F.save(); F.toast('Đã bỏ chặn'); draw(el); })); };
+    F.modal({ title: 'Đã chặn', body: '', onOpen: (el) => draw(el) }); };
+
+  /* ================= A07 · Cài đặt ================= */
+  pages.settings = () => {
+    const me = F.me(); const s = F.session();
+    const v = F.shell({ side: 'me', bar: 'close', back: me ? 'reader/account.html' : 'reader/index.html', notab: true, title: '' });
+    const TH = { dark: 'Tối', light: 'Sáng', system: 'Theo hệ thống' };
+    const ext = (icon, label, id) => `<button class="gi" id="${id}">${I(icon)}<span class="gl">${label}</span>${I('arrowUR', 'chev')}</button>`;
+    v.innerHTML = `<h1 class="large-title">Cài đặt</h1><div class="page groups">
+      ${me ? `<a class="group" href="${F.url('reader/profile-edit.html')}"><div class="gi">${F.avatar(me, 'md')}<span class="gl">${F.esc(me.name)}<small>${F.esc(me.email)}</small></span>${I('chevR', 'chev')}</div></a>
+      <div class="group"><a class="gi" href="${F.url('reader/bookmarks.html')}">${I('bookmark')}<span class="gl">Đã lưu</span><span class="gv">${me.bookmarks.length}</span>${I('chevR', 'chev')}</a><a class="gi" href="${F.url('reader/bookmarks.html?t=history')}">${I('archive')}<span class="gl">Lịch sử đọc</span>${I('chevR', 'chev')}</a><button class="gi" id="sto">${I('storage')}<span class="gl">Bộ nhớ & tải xuống</span><span class="gv">3,4 MB</span>${I('chevR', 'chev')}</button></div>`
+      : `<div class="group"><a class="gi" href="${F.url('reader/login.html?next=' + encodeURIComponent('reader/settings.html'))}">${I('user')}<span class="gl">Đăng nhập / Đăng ký<small>Bạn đang ở chế độ Khách</small></span>${I('chevR', 'chev')}</a></div>`}
+      <div class="group">${me ? `<a class="gi" href="${F.url('reader/account-info.html')}">${I('user')}<span class="gl">Tài khoản</span>${I('chevR', 'chev')}</a>` : ''}<button class="gi" id="thm">${I('palette')}<span class="gl">Giao diện</span><span class="gv">${TH[F.theme()]}</span>${I('chevR', 'chev')}</button>${me ? `<button class="gi" id="ntf">${I('bell')}<span class="gl">Thông báo</span>${I('chevR', 'chev')}</button>` : ''}</div>
+      ${me ? `<div class="group"><a class="gi" href="${F.url(s.phase2 ? 'reader/subscription.html' : 'reader/pricing.html')}">${I('card')}<span class="gl">Gói hội viên</span><span class="gv">${F.hasSub() ? 'Premium' : 'Miễn phí'}</span>${I('chevR', 'chev')}</a><button class="gi" id="int">${I('sliders')}<span class="gl">Nội dung quan tâm</span><span class="gv">${me.interests.map((x) => F.STREAM_S[x]).join(', ') || 'Chưa chọn'}</span>${I('chevR', 'chev')}</button><button class="gi" id="lng">${I('translate')}<span class="gl">Ngôn ngữ</span><span class="gv">Tiếng Việt</span>${I('chevR', 'chev')}</button><button class="gi" id="prv">${I('shield')}<span class="gl">Quyền riêng tư</span>${I('chevR', 'chev')}</button></div>` : ''}
+      <div class="group">${ext('help', 'Hỗ trợ', 'sup')}${ext('feedback', 'Góp ý', 'fbk')}<a class="gi" href="${F.url('reader/terms.html')}">${I('file')}<span class="gl">Điều khoản & chính sách</span>${I('chevR', 'chev')}</a></div>
+      ${me ? `<div class="group"><button class="gi danger" id="out">${I('power')}<span class="gl">Đăng xuất</span></button></div>` : ''}
+      <div class="small faint" style="padding:0 4px">Phiên bản 1.0.0 (Prototype) · Build 2026.09<div class="foot-links" style="margin-top:6px"><a href="${F.url('reader/terms.html')}">EULA</a><a href="${F.url('reader/privacy.html')}">Chính sách bảo mật</a><a href="${F.url('reader/disclaimer.html')}">Miễn trừ trách nhiệm</a></div></div>
+    </div>`;
+    $('#thm').onclick = () => F.modal({ title: 'Giao diện', body: `<div class="group">${[['dark', 'Tối', 'moon'], ['light', 'Sáng', 'sun'], ['system', 'Theo hệ thống', 'phone']].map((t) => `<label class="gi">${I(t[2])}<span class="gl">${t[1]}</span><input type="radio" name="th" value="${t[0]}" ${F.theme() === t[0] ? 'checked' : ''}></label>`).join('')}</div>`, onOpen: (el, close) => $$('input[name=th]', el).forEach((r) => (r.onchange = () => { F.setTheme(r.value); close(); location.reload(); })) });
+    $('#sup').onclick = () => F.toast('Mô phỏng: mở trung tâm hỗ trợ support.fbv.vn', 'info');
+    $('#fbk').onclick = () => F.modal({ title: 'Góp ý cho FBV', body: `<div class="field"><label for="fb">Bạn muốn FBV cải thiện điều gì?</label><textarea class="textarea" id="fb" placeholder="Nội dung góp ý…"></textarea></div>`, actions: [{ label: 'Hủy' }, { label: 'Gửi', cls: 'btn-primary', onClick: () => F.toast('Cảm ơn góp ý của bạn!') }] });
+    if (!me) return;
+    $('#sto').onclick = () => F.modal({ title: 'Bộ nhớ & tải xuống', body: `<div class="group"><div class="gi noicon"><span class="gl">PDF đã tải</span><span class="gv">2 tệp · 3,1 MB</span></div><div class="gi noicon"><span class="gl">Bộ nhớ đệm</span><span class="gv">0,3 MB</span></div></div><p class="hint mt-8">Báo cáo PDF đã tải có thể đọc ngoại tuyến trong ứng dụng.</p>`, actions: [{ label: 'Đóng' }, { label: 'Xóa dữ liệu tải xuống', cls: 'btn-danger-soft', onClick: () => F.toast('Đã xóa dữ liệu tải xuống') }] });
+    $('#ntf').onclick = () => { const p = me.prefs; const row = (k, t, d) => `<label class="gi noicon"><span class="gl">${t}<small>${d}</small></span><span class="switch"><input type="checkbox" data-k="${k}" ${p[k] ? 'checked' : ''}><span></span></span></label>`;
+      F.modal({ title: 'Thông báo', body: `<div class="group-title">Thông báo đẩy</div><div class="group">${row('answer', 'Phản hồi phản biện', 'Khi chuyên gia trả lời bạn')}${row('follow', 'Chuyên gia theo dõi', 'Khi có báo cáo mới')}${row('report', 'Báo cáo theo lĩnh vực', 'Luồng bạn quan tâm')}</div><div class="group-title mt-16">Email</div><div class="group">${row('digest', 'Bản tin tuần', 'Tổng hợp nghiên cứu nổi bật')}${row('email', 'Email phản biện', 'Sao chép thông báo qua email')}</div>`, onOpen: (el) => $$('[data-k]', el).forEach((c) => (c.onchange = () => { p[c.dataset.k] = c.checked; F.save(); })) }); };
+    $('#int').onclick = () => interestSheet(() => location.reload());
+    $('#lng').onclick = () => F.modal({ title: 'Ngôn ngữ', body: `<div class="group"><label class="gi noicon"><span class="gl">Tiếng Việt</span><input type="radio" name="lg" checked></label><label class="gi noicon"><span class="gl">English<small>Sắp ra mắt</small></span><input type="radio" name="lg" disabled></label></div>` });
+    $('#prv').onclick = () => F.modal({ title: 'Quyền riêng tư', body: `<div class="group"><button class="gi" id="pb">${I('ban')}<span class="gl">Chuyên gia đã chặn</span><span class="gv">${me.blocked.length}</span>${I('chevR', 'chev')}</button><label class="gi">${I('sparkles')}<span class="gl">Cá nhân hóa bảng tin<small>Dựa trên lĩnh vực và lịch sử đọc</small></span><span class="switch"><input type="checkbox" checked><span></span></span></label><button class="gi" id="pe">${I('download')}<span class="gl">Tải xuống dữ liệu của tôi</span>${I('chevR', 'chev')}</button><a class="gi" href="${F.url('reader/privacy.html')}">${I('file')}<span class="gl">Chính sách bảo mật</span>${I('chevR', 'chev')}</a></div>`, onOpen: (el, close) => { $('#pb', el).onclick = () => { close(); blockedSheet(); }; $('#pe', el).onclick = () => F.toast('Đã gửi yêu cầu. Tệp dữ liệu sẽ được gửi qua email trong 48 giờ.'); } });
+    $('#out').onclick = () => F.confirm('Đăng xuất?', 'Bạn có thể đăng nhập lại bất cứ lúc nào bằng email hoặc Apple/Google.', 'Đăng xuất', 'btn-danger', () => { F.logout(); F.toast('Đã đăng xuất'); setTimeout(() => F.go('reader/index.html'), 300); });
+  };
+
+  /* ================= A08 · Tài khoản ================= */
+  pages.accountInfo = () => {
+    const me = F.me(); if (!me) { F.go('reader/login.html?next=' + encodeURIComponent('reader/account-info.html')); return; }
+    const v = F.shell({ side: 'me', bar: 'back', back: 'reader/settings.html', title: 'Tài khoản' });
+    const prov = me.provider || 'Email';
+    v.innerHTML = `<div class="page groups" style="padding-top:12px">
+      <div class="group plain"><div class="gi noicon"><span class="gl">Email</span><span class="gv">${F.esc(me.email)}</span></div><div class="gi noicon"><span class="gl">Đăng nhập bằng</span><span class="gv">${prov === 'Email' ? 'Email · OTP' : prov}</span></div><div class="gi noicon"><span class="gl">Ngày tham gia</span><span class="gv">${F.date(me.joined)}</span></div></div>
+      <div><div class="group-title">Phương thức liên kết</div><div class="group"><div class="gi"><span style="width:22px;display:grid;place-items:center">${F.appleIcon()}</span><span class="gl">Apple</span>${prov === 'Apple' ? '<span class="gv">Đã liên kết</span>' : `<button class="btn btn-gray btn-xs" data-lk="Apple">Liên kết</button>`}</div><div class="gi"><span style="width:22px;display:grid;place-items:center">${F.googleIcon()}</span><span class="gl">Google</span>${prov === 'Google' ? '<span class="gv">Đã liên kết</span>' : `<button class="btn btn-gray btn-xs" data-lk="Google">Liên kết</button>`}</div></div></div>
+      <div class="group"><a class="gi center danger" href="${F.url('reader/delete-account.html')}"><span class="gl">Xóa tài khoản</span></a></div>
+      <p class="group-foot">Xóa tài khoản sẽ xóa vĩnh viễn hồ sơ, báo cáo đã lưu và lịch sử phản biện của bạn trong vòng 30 ngày.</p></div>`;
+    $$('[data-lk]').forEach((b) => (b.onclick = () => { me.provider = b.dataset.lk; F.save(); F.toast('Đã liên kết ' + b.dataset.lk); setTimeout(() => location.reload(), 400); }));
+  };
+
+  /* ================= A09 · Xóa tài khoản ================= */
+  pages.deleteAccount = () => {
+    const me = F.me(); if (!me) { F.go('reader/login.html'); return; }
+    const v = F.shell({ side: 'me', bar: 'back', back: 'reader/account-info.html', title: 'Xóa tài khoản', notab: true });
+    v.innerHTML = `<div class="page stack lg" style="padding-top:12px">
+      <div><div class="empty" style="padding:8px 0 0;align-items:flex-start;text-align:left"><div class="ico" style="background:var(--danger-soft);color:var(--danger)">${I('trash')}</div></div><h1 class="serif" style="font-size:28px;line-height:1.2">Xóa vĩnh viễn tài khoản?</h1><p class="muted mt-8">Thao tác không thể hoàn tác. Các dữ liệu sau sẽ bị xóa:</p></div>
+      <div class="group plain">${['Hồ sơ, email và lĩnh vực quan tâm', 'Báo cáo đã lưu và lịch sử đọc', 'Toàn bộ phiên phản biện 1:1', 'Danh sách chuyên gia theo dõi'].map((x) => `<div class="gi noicon"><span class="gl" style="font-weight:500">${x}</span>${I('x', 'i-sm down')}</div>`).join('')}</div>
+      ${F.hasSub() ? `<div class="note warn">${I('alert')}<span>Bạn đang có gói <b>Premium</b>. Xóa tài khoản không tự hủy gia hạn trên App Store / Google Play — hãy hủy gia hạn trong phần quản lý gói của cửa hàng.</span></div>` : ''}
+      <div><div class="group-title">Lý do (không bắt buộc)</div><div class="group">${['Tôi không còn sử dụng', 'Nội dung chưa phù hợp', 'Lo ngại quyền riêng tư', 'Lý do khác'].map((x, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${x}</span><input type="radio" name="rs" ${i ? '' : 'checked'}></label>`).join('')}</div></div>
+      <div class="field"><label for="cf">Nhập <b style="color:var(--danger)">XÓA</b> để xác nhận</label><input class="input" id="cf" autocomplete="off" placeholder="XÓA"></div>
+      <button class="btn btn-danger btn-pill btn-block" id="del" disabled>Xóa tài khoản vĩnh viễn</button>
+      <a class="btn btn-ghost btn-block" href="${F.url('reader/account-info.html')}">Giữ tài khoản</a></div>`;
+    $('#cf').oninput = () => { $('#del').disabled = $('#cf').value.trim().toUpperCase() !== 'XÓA'; };
+    $('#del').onclick = () => {
+      const db = F.db(); const id = me.id;
+      db.users = db.users.filter((u) => u.id !== id); db.inquiries = db.inquiries.filter((q) => q.reader !== id); db.notifications = db.notifications.filter((n) => n.user !== id);
+      F.session().uid = null; F.session().subscription = null; F.save();
+      authPage(`<div class="auth-wrap" style="padding-top:80px"><div class="empty"><div class="ico" style="background:var(--success-soft);color:var(--success)">${I('check')}</div><h3>Tài khoản đã được xóa</h3><p>Dữ liệu của bạn sẽ được loại bỏ hoàn toàn khỏi hệ thống trong vòng 30 ngày. Cảm ơn bạn đã đồng hành cùng FBV.</p><a class="btn btn-primary" href="${F.url('reader/index.html')}">Về trang chủ</a></div></div>`);
+    };
+  };
+
+  /* ================= R11 · Hoạt động (Thông báo) ================= */
+  const notiLink = (n) => (n.type === 'answer' ? 'reader/inquiry.html?id=' + n.ref + '&n=' + n.id : n.ref ? 'reader/report.html?id=' + n.ref + '&n=' + n.id : 'reader/notifications.html');
+  pages.notifications = () => {
+    const v = F.shell({ tab: 'activity', bar: 'root', rootTitle: '' }); const me = F.me();
+    v.innerHTML = `<h1 class="large-title">Hoạt động</h1><div id="nv"></div>`;
+    if (!me) { $('#nv').innerHTML = F.gate('bell', 'Theo dõi mọi phản hồi', 'Đăng nhập để nhận thông báo khi chuyên gia trả lời phản biện hoặc xuất bản báo cáo mới.'); return; }
+    let f = 'all';
+    const draw = () => {
+      const all = F.db().notifications.filter((n) => n.user === me.id).sort((a, b) => new Date(b.at) - new Date(a.at));
+      const list = all.filter((n) => f === 'all' || (f === 'answer' && n.type === 'answer') || (f === 'report' && ['report', 'follow'].includes(n.type)) || (f === 'system' && n.type === 'system'));
+      $('#nv').innerHTML = `<div class="row between" style="padding:0 var(--gutter) 8px"><div class="chips">${[['all', 'Tất cả'], ['answer', 'Phản biện'], ['report', 'Báo cáo mới'], ['system', 'Hệ thống']].map((x) => `<button class="chip ${f === x[0] ? 'on' : ''}" data-f="${x[0]}">${x[1]}</button>`).join('')}</div></div>
+        ${all.some((n) => !n.read) ? `<div style="padding:0 var(--gutter) 6px;text-align:right"><button class="btn-text small" id="ra">Đánh dấu tất cả đã đọc</button></div>` : ''}
+        ${list.length ? list.map((n) => { const q = n.type === 'answer' ? F.inquiry(n.ref) : null; const r = n.type !== 'answer' && n.ref ? F.report(n.ref) : null; const who = q ? F.expert(q.expert) : r ? F.expert(r.author) : null; const ic = { answer: 'chat', report: 'file', follow: 'user', system: 'info' }[n.type];
+          return `<a class="act ${n.read ? '' : 'unread'}" href="${F.url(notiLink(n))}" data-n="${n.id}"><span class="ai">${who ? F.avatar(who, 'md') : `<span class="av md" style="background:var(--accent)">${F.logoMark('i')}</span>`}<span class="ib">${I(ic)}</span></span><span class="t">${F.esc(n.text)}<small>${F.ago(n.at)}</small></span>${n.read ? '' : '<span class="udot" style="margin-top:6px"></span>'}</a>`; }).join('') : F.empty('bell', 'Chưa có thông báo', 'Hoạt động mới sẽ xuất hiện tại đây.')}`;
+      $$('[data-f]').forEach((b) => (b.onclick = () => { f = b.dataset.f; draw(); }));
+      const ra = $('#ra'); if (ra) ra.onclick = () => { all.forEach((n) => (n.read = true)); F.save(); draw(); F.toast('Đã đánh dấu tất cả là đã đọc'); };
+      $$('[data-n]').forEach((a) => a.addEventListener('click', () => { const n = all.find((x) => x.id === a.dataset.n); n.read = true; F.save(); }));
+    };
+    draw();
+  };
+
+  /* ================= R12 · Phản biện của tôi (Chat) ================= */
+  const inqRow = (q) => { const e = F.expert(q.expert); const r = F.report(q.r); const last = q.messages[q.messages.length - 1]; const mine = last.by === q.reader;
+    return `<a class="lrow ${q.readerUnread ? 'unread' : ''}" href="${F.url('reader/inquiry.html?id=' + q.id)}">${F.avatar(e, 'md')}<div class="t"><b><span class="ellipsis">${F.esc(e.name)}</span>${F.vb(e)}</b><div class="pv">${mine ? 'Bạn: ' : ''}${F.esc(last.x)}</div><small class="ellipsis">${F.iStatusBadge(q.status)} <span style="margin-left:4px">${F.esc(r ? r.title : '')}</span></small></div><div class="rt"><span>${F.short(last.at)}</span>${q.readerUnread ? '<span class="udot"></span>' : ''}</div></a>`; };
   pages.inquiries = () => {
-    if (!F.isMember()) {
-      F.readerShell('inquiries');
-      app().innerHTML = `<div class="page narrow"><div class="card center" style="padding:28px 20px"><div class="empty" style="padding:8px"><div class="ico">${I('message')}</div><h3>Trao đổi riêng 1:1 với tác giả</h3><p>Khi đọc báo cáo, bôi đen một đoạn văn hoặc số liệu rồi chọn “Trích dẫn & Hỏi chuyên gia”. Mọi trao đổi đều riêng tư, không công khai.</p><a class="btn btn-primary" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập để bắt đầu</a></div></div></div>`;
-      return;
-    }
-    F.readerShell('inquiries');
-    const me = F.me(); const tab = F.param('t') || 'all';
-    const mine = F.db().inquiries.filter((q) => q.reader === me.id && !me.blocked.includes(q.expert));
-    const groups = { all: mine, open: mine.filter((q) => ['new', 'assigned', 'in_progress'].includes(q.status)), answered: mine.filter((q) => q.status === 'answered'), closed: mine.filter((q) => ['closed', 'reported'].includes(q.status)) };
-    const list = groups[tab].slice().sort((a, b) => new Date(b.messages[b.messages.length - 1].at) - new Date(a.messages[a.messages.length - 1].at));
-    app().innerHTML = accLayout('', `<div class="card tight mb-16">${F.quotaBar()}</div>
-      <nav class="chipbar">${[['all', 'Tất cả'], ['open', 'Đang mở'], ['answered', 'Đã trả lời'], ['closed', 'Đã đóng']].map((t) => `<a class="chip ${tab === t[0] ? 'active' : ''}" href="?t=${t[0]}">${t[1]} · ${groups[t[0]].length}</a>`).join('')}</nav>
-      ${list.length ? `<div class="list-card flush">${list.map((q) => { const r = F.report(q.r); const e = F.expert(q.expert); const last = q.messages[q.messages.length - 1]; return `<a class="inq-row" href="${F.url('reader/inquiry.html?id=' + q.id)}">${F.avatar(e, 'md')}<div style="min-width:0"><div class="row between" style="gap:8px;align-items:baseline"><b class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${F.esc(e.name)}</b><span class="xs muted" style="flex:none">${F.ago(last.at)}</span></div><div class="t">${F.esc(r.title)}</div><div class="last ${q.readerUnread ? 'unread' : ''}">${last.by === me.id ? 'Bạn: ' : ''}${F.esc(last.x)}</div></div><div class="ir-side">${F.iStatusBadge(q.status)}${q.readerUnread ? '<span class="unread-dot" title="Có phản hồi mới"></span>' : ''}</div></a>`; }).join('')}</div>`
-      : `<div class="card">${F.empty('message', tab === 'all' ? 'Bạn chưa có phiên phản biện nào' : 'Không có phiên nào trong mục này', 'Trong khi đọc báo cáo, hãy bôi đen một đoạn văn hoặc số liệu rồi chọn “Trích dẫn & Hỏi chuyên gia” để bắt đầu trao đổi riêng với tác giả.', `<a class="btn btn-primary" href="${F.url('reader/report.html?id=r5')}">Thử với một báo cáo</a>`)}</div>`}`);
+    const v = F.shell({ tab: 'chat', bar: 'root', rootTitle: '' }); const me = F.me();
+    v.innerHTML = `<h1 class="large-title">Phản biện</h1><div id="iv"></div>`;
+    if (!me) { $('#iv').innerHTML = F.gate('chat', 'Trao đổi học thuật 1:1 kín', 'Bôi đen đoạn văn hoặc số liệu trong báo cáo để gửi câu hỏi phản biện riêng tới chuyên gia tác giả. Không công khai trên mạng xã hội.'); return; }
+    let f = 'open';
+    const draw = () => {
+      const all = F.db().inquiries.filter((q) => q.reader === me.id).sort((a, b) => new Date(b.messages[b.messages.length - 1].at) - new Date(a.messages[a.messages.length - 1].at));
+      const open = all.filter((q) => ['new', 'assigned', 'in_progress', 'answered'].includes(q.status)); const done = all.filter((q) => !['new', 'assigned', 'in_progress', 'answered'].includes(q.status));
+      const list = f === 'open' ? open : done;
+      $('#iv').innerHTML = `<div class="page"><div class="panel">${F.quotaBar()}</div>
+          ${F.session().phase2 ? `<a class="note accent mt-12" href="${F.url('reader/sessions.html')}">${I('video')}<span class="grow"><b>Buổi trao đổi kín cùng chuyên gia</b><br>Đặc quyền Premium · lịch định kỳ hằng tháng</span>${I('chevR', 'i-sm')}</a>` : ''}
+          <div class="seg full mt-16"><button class="${f === 'open' ? 'on' : ''}" data-f="open">Đang mở · ${open.length}</button><button class="${f === 'done' ? 'on' : ''}" data-f="done">Đã đóng · ${done.length}</button></div></div>
+        <div class="chat-list mt-8">${list.length ? list.map(inqRow).join('') : F.empty('chat', f === 'open' ? 'Chưa có phiên đang mở' : 'Chưa có phiên đã đóng', 'Mở một báo cáo, bôi đen đoạn cần hỏi và chọn “Trích dẫn & phản biện”.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Đọc báo cáo</a>`)}</div>
+        <div class="page mt-16"><div class="note">${I('lock')}<span>Phiên 1:1 riêng tư giữa bạn và chuyên gia. Mỗi phiên có nút <b>Báo cáo vi phạm</b> và <b>Chặn</b> theo chính sách cộng đồng.</span></div></div>`;
+      $$('[data-f]').forEach((b) => (b.onclick = () => { f = b.dataset.f; draw(); }));
+    };
+    draw();
   };
 
-  /* ================= R18 · Chi tiết phiên phản biện (chat) ================= */
+  /* ================= R13 · Phiên trao đổi 1:1 ================= */
   pages.inquiry = () => {
-    if (!needMember('inquiries')) return; F.readerShell('inquiries');
-    const me = F.me(); const q = F.inquiry(F.param('id') || 'q1');
-    if (!q || q.reader !== me.id) { app().innerHTML = `<div class="page narrow"><div class="card">${F.empty('message', 'Không tìm thấy phiên trao đổi', 'Phiên không tồn tại hoặc bạn không có quyền truy cập.', `<a class="btn btn-primary" href="${F.url('reader/inquiries.html')}">Về hộp phản biện</a>`)}</div></div>`; return; }
+    const me = F.me(); const q = F.inquiry(F.param('id'));
+    if (!me) { const v = F.shell({ bar: 'back', back: 'reader/inquiries.html', title: 'Phản biện' }); v.innerHTML = F.gate('chat', 'Đăng nhập để xem phiên trao đổi', 'Phiên phản biện 1:1 chỉ hiển thị với bạn và chuyên gia.'); return; }
+    if (!q || q.reader !== me.id) { const v = F.shell({ bar: 'back', back: 'reader/inquiries.html', title: 'Phản biện' }); v.innerHTML = F.empty('chat', 'Không tìm thấy phiên', 'Phiên không tồn tại hoặc không thuộc tài khoản của bạn.'); return; }
     const nid = F.param('n'); if (nid) { const n = F.db().notifications.find((x) => x.id === nid); if (n) n.read = true; }
     q.readerUnread = false; F.save();
-    const r = F.report(q.r); const e = F.expert(q.expert); const blocked = me.blocked.includes(e.id);
-    F.setTitle(e.name);
-    const acts = F.setActions(`<div class="rel"><button class="icon-btn" id="mn" aria-label="Tùy chọn">${I('more')}</button></div>`);
-    const canReply = () => !['closed', 'reported'].includes(q.status) && !blocked;
-    const sla = new Date(q.slaDue); const overdue = sla < Date.now() && ['new', 'assigned', 'in_progress'].includes(q.status);
-    const render = () => {
-      app().innerHTML = `<div class="page narrow">
-        <div class="chat-quote"><div class="row between" style="gap:8px;margin-bottom:6px"><a class="small" style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" href="${F.url('reader/report.html?id=' + r.id + '#p' + q.block)}">${I('file').replace('<svg', '<svg style="width:14px;height:14px;display:inline;vertical-align:-2px"')} ${F.esc(r.title)}</a>${F.iStatusBadge(q.status)}</div><div class="quote-block collapsed" id="qb" title="Nhấn để mở rộng">“${F.esc(q.quote)}”</div></div>
-        ${['new', 'assigned', 'in_progress'].includes(q.status) ? `<div class="sla ${overdue ? 'late' : 'ok'} mb-16" style="justify-content:center;width:100%">${I('clock')}${overdue ? 'Đã quá thời gian phản hồi dự kiến — FBV đang nhắc chuyên gia' : 'Phản hồi dự kiến trước ' + F.date(q.slaDue, true)}</div>` : ''}
-        <div class="thread">${q.messages.map((m) => { const mine = m.by === me.id; const p = F.person(m.by); return `<div class="msg ${mine ? 'mine' : ''}">${mine ? '' : F.avatar(p, 'sm')}<div style="min-width:0"><div class="mh">${mine ? '' : `<b>${F.esc(p.name)}</b>${p.verified ? F.verifiedIcon().replace('<svg', '<svg style="width:14px;height:14px"') : ''}`}<span>${F.ago(m.at)}</span></div><div class="bubble">${F.esc(m.x)}</div></div></div>`; }).join('')}
-          ${q.status === 'closed' ? '<div class="msg system"><div class="bubble">— Phiên trao đổi đã được đóng —</div></div>' : ''}${q.status === 'reported' ? '<div class="msg system"><div class="bubble">— Phiên đang được FBV xem xét do có báo cáo vi phạm —</div></div>' : ''}</div>
-        <p class="hint center mt-16">${I('lock').replace('<svg', '<svg style="width:12px;height:12px;display:inline;vertical-align:-1px"')} Trao đổi riêng tư giữa bạn và chuyên gia. FBV chỉ xem xét khi có báo cáo vi phạm.</p></div>
-        <div class="dock">${blocked ? `<div class="alert danger" style="max-width:900px;margin:0 auto">${I('ban')}<span>Bạn đã chặn chuyên gia này. <a href="${F.url('reader/settings.html')}">Quản lý danh sách chặn</a></span></div>` : canReply() ? `<div class="composer"><textarea id="rp" rows="1" placeholder="Nhắn tới ${F.esc(e.short)}…" aria-label="Nội dung phản hồi"></textarea><button class="btn btn-primary" id="sd" aria-label="Gửi">${I('send')}</button></div>` : `<div class="perm-note" style="max-width:900px;margin:0 auto">${I('info')}<span>Phiên này không nhận thêm phản hồi. Bạn có thể mở phiên mới từ báo cáo.</span></div>`}</div>`;
-      $('#qb').onclick = () => $('#qb').classList.toggle('collapsed');
-      const sd = $('#sd'); if (sd) { const ta = $('#rp'); ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }); ta.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) sd.click(); });
-        sd.onclick = () => { const v = ta.value.trim(); if (v.length < 2) return; q.messages.push({ by: me.id, at: new Date().toISOString(), x: v }); if (q.status === 'answered') q.status = 'in_progress'; q.expertUnread = true; F.save(); render(); window.scrollTo(0, document.body.scrollHeight); }; }
+    const e = F.expert(q.expert); const r = F.report(q.r);
+    const blocked = () => me.blocked.includes(e.id);
+    const v = F.shell({ side: 'chat', bar: 'back', back: 'reader/inquiries.html', notab: true, title: '', right: `<button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
+    $('#abTitle').innerHTML = `<a class="row" style="justify-content:center;gap:8px" href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'sm')}<span class="ellipsis" style="font-size:16px">${F.esc(e.name)}</span>${F.vb(e)}</a>`;
+    document.title = 'Phản biện · ' + e.name + ' · FBV';
+    const draw = () => {
+      const closed = ['closed', 'reported'].includes(q.status) || blocked();
+      document.body.style.setProperty('--dock', closed ? '56px' : '60px');
+      let lastDay = '';
+      v.innerHTML = `<div class="thread-quote"><a class="quote-card" href="${F.url('reader/report.html?id=' + r.id)}" style="display:block">“${F.esc(q.quote)}”<small>${F.esc(r.title)}</small></a><div class="row between mt-8 small faint"><span>${F.iStatusBadge(q.status)}</span><span>Mở ${F.date(q.createdAt)}${['new', 'assigned', 'in_progress'].includes(q.status) ? ' · phản hồi trong ' + F.db().config.slaHours + ' giờ' : ''}</span></div></div>
+        <div class="thread">${q.messages.map((m) => { const d = F.date(m.at); const sep = d !== lastDay ? `<div class="day-sep">${d}</div>` : ''; lastDay = d; const mine = m.by === me.id; const hid = m.x.startsWith('[Nội dung đã bị ẩn');
+          return sep + `<div class="msg ${mine ? 'me' : 'them'}">${mine ? '' : F.avatar(e, 'sm')}<div><div class="bub ${hid ? 'hid' : ''}">${F.esc(m.x)}</div><div class="tm">${new Date(m.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div></div></div>`; }).join('')}</div>
+        ${closed ? `<div class="composer-closed">${blocked() ? 'Bạn đã chặn chuyên gia này. Bỏ chặn trong Cài đặt → Quyền riêng tư.' : q.status === 'reported' ? 'Phiên đang được FBV xem xét do có báo cáo vi phạm.' : 'Phiên đã đóng. Bạn có thể mở phiên mới từ báo cáo.'}</div>`
+          : `<div class="composer"><div class="inner"><textarea id="tx" rows="1" placeholder="Viết phản hồi học thuật…" maxlength="1500" aria-label="Nội dung"></textarea><button class="send" id="snd" disabled aria-label="Gửi">${I('send')}</button></div></div>`}`;
       window.scrollTo(0, document.body.scrollHeight);
+      const tx = $('#tx'); if (!tx) return;
+      tx.addEventListener('input', () => { tx.style.height = 'auto'; tx.style.height = Math.min(140, tx.scrollHeight) + 'px'; $('#snd').disabled = tx.value.trim().length < 2; });
+      $('#snd').onclick = () => { const x = tx.value.trim(); if (x.length < 2) return; q.messages.push({ by: me.id, at: new Date().toISOString(), x }); if (q.status === 'answered') q.status = 'in_progress'; q.expertUnread = true; F.save(); draw(); F.toast('Đã gửi tới ' + e.name); };
     };
-    $('#mn', acts).onclick = (ev) => { ev.stopPropagation(); F.dropdown($('#mn'), `<a href="${F.url('reader/report.html?id=' + r.id)}">${I('file')}Mở báo cáo</a><a href="${F.url('reader/expert.html?id=' + e.id)}">${I('user')}Hồ sơ chuyên gia</a><hr><button id="mRep">${I('flag')}Báo cáo vi phạm</button><button id="mBlk" style="color:var(--danger)">${I('ban')}${blocked ? 'Bỏ chặn chuyên gia' : 'Chặn chuyên gia này'}</button>${['answered', 'in_progress', 'new', 'assigned'].includes(q.status) ? `<hr><button id="mCls">${I('checkCircle')}Đóng phiên (đã được giải đáp)</button>` : ''}`);
-      $('#mRep').onclick = reportModal; $('#mBlk').onclick = blockModal; const c = $('#mCls'); if (c) c.onclick = () => F.confirm('Đóng phiên trao đổi?', 'Bạn sẽ không gửi thêm phản hồi trong phiên này. Có thể mở phiên mới từ báo cáo.', 'Đóng phiên', 'btn-primary', () => { q.status = 'closed'; F.save(); F.toast('Đã đóng phiên'); render(); }); };
-    const reportModal = () => F.modal({ title: 'Báo cáo vi phạm', body: `<p class="sub small mb-12">Báo cáo được gửi tới đội ngũ kiểm duyệt FBV và xử lý trong vòng 24 giờ. Người bị báo cáo không biết danh tính của bạn.</p><div class="radio-list">${['Spam hoặc quảng cáo', 'Ngôn từ xúc phạm / quấy rối', 'Thông tin sai lệch', 'Lôi kéo đầu tư / tư vấn trái phép', 'Khác'].map((x, i) => `<label><input type="radio" name="rr" value="${x}" ${i ? '' : 'checked'}>${x}</label>`).join('')}</div><div class="field mt-12"><label for="rd">Mô tả thêm (không bắt buộc)</label><textarea class="textarea" id="rd" style="min-height:80px"></textarea></div>`,
-      actions: [{ label: 'Hủy' }, { label: 'Gửi báo cáo', cls: 'btn-danger', onClick: (c, el) => { const reason = $('input[name=rr]:checked', el).value; F.db().moderation.unshift({ id: F.uid('m'), type: 'inquiry', ref: q.id, reporter: me.id, target: e.id, reason, detail: $('#rd', el).value.trim() || '—', status: 'open', createdAt: new Date().toISOString() }); F.save(); F.toast('Đã gửi báo cáo. Cảm ơn bạn đã giúp cộng đồng an toàn hơn.'); } }] });
-    const blockModal = () => {
-      if (blocked) { me.blocked = me.blocked.filter((x) => x !== e.id); F.save(); F.toast('Đã bỏ chặn ' + e.name); location.reload(); return; }
-      F.confirm('Chặn ' + F.esc(e.name) + '?', 'Bạn sẽ không nhận tin nhắn từ chuyên gia này và các phiên liên quan sẽ bị ẩn. Có thể bỏ chặn trong Cài đặt.', 'Chặn', 'btn-danger', () => { me.blocked.push(e.id); F.save(); sessionStorage.setItem('fbv-flash', 'Đã chặn ' + e.name); F.go('reader/inquiries.html'); });
-    };
-    render();
+    draw();
+    $('#more').onclick = () => F.menu([
+      { icon: 'file', label: 'Xem báo cáo gốc', onClick: () => F.go('reader/report.html?id=' + r.id + (q.block != null ? '#p' + q.block : '')) },
+      ...(['closed', 'reported'].includes(q.status) ? [] : [{ icon: 'checkCircle', label: 'Đóng phiên (đã được giải đáp)', onClick: () => { q.status = 'closed'; F.save(); draw(); F.toast('Đã đóng phiên. Cảm ơn bạn!'); } }]),
+      { icon: 'flag', label: 'Báo cáo vi phạm', danger: true, onClick: () => reportSheet(q, e, draw) },
+      { icon: 'ban', label: blocked() ? 'Bỏ chặn chuyên gia' : 'Chặn chuyên gia', danger: true, onClick: () => { if (blocked()) { me.blocked = me.blocked.filter((x) => x !== e.id); F.save(); draw(); F.toast('Đã bỏ chặn'); } else F.confirm('Chặn ' + e.name + '?', 'Bạn sẽ không nhận tin nhắn từ chuyên gia này và không thể gửi phản biện mới tới họ. Có thể bỏ chặn trong Cài đặt.', 'Chặn', 'btn-danger', () => { me.blocked.push(e.id); F.save(); draw(); F.toast('Đã chặn chuyên gia', 'info'); }); } }
+    ], 'Phiên phản biện');
   };
+  const reportSheet = (q, e, after) => F.modal({ title: 'Báo cáo vi phạm', body: `<div class="stack"><p class="muted small">Báo cáo được gửi tới đội ngũ kiểm duyệt FBV và xử lý trong 24 giờ. ${F.esc(e.name)} sẽ không biết ai đã báo cáo.</p><div class="group">${['Ngôn từ xúc phạm / quấy rối', 'Spam hoặc quảng cáo', 'Thông tin sai lệch có chủ đích', 'Khuyến nghị mua/bán trái quy định', 'Khác'].map((x, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${x}</span><input type="radio" name="rr" value="${x}" ${i ? '' : 'checked'}></label>`).join('')}</div><div class="field"><label for="rd">Mô tả thêm (không bắt buộc)</label><textarea class="textarea" id="rd" style="min-height:80px"></textarea></div><label class="checkbox"><input type="checkbox" id="rb">Chặn chuyên gia này</label></div>`,
+    actions: [{ label: 'Hủy' }, { label: 'Gửi báo cáo', cls: 'btn-danger', onClick: (c, el) => { const me = F.me(); F.db().moderation.unshift({ id: F.uid('m'), type: 'inquiry', ref: q.id, reporter: me.id, target: e.id, reason: $('input[name=rr]:checked', el).value, detail: $('#rd', el).value || '—', status: 'open', createdAt: new Date().toISOString() }); if ($('#rb', el).checked && !me.blocked.includes(e.id)) me.blocked.push(e.id); F.save(); F.toast('Đã gửi báo cáo. Cảm ơn bạn!'); after && after(); } }] });
 
-  /* ================= R20 · Thông báo ================= */
-  pages.notifications = () => {
-    if (!needMember()) return; F.readerShell('me');
-    const me = F.me(); const list = F.db().notifications.filter((n) => n.user === me.id).sort((a, b) => new Date(b.at) - new Date(a.at));
-    if (list.some((n) => !n.read)) F.setActions(`<button class="btn btn-ghost btn-sm" id="ra">Đọc tất cả</button>`);
-    app().innerHTML = accLayout('', `${list.length ? `<div class="list-card flush">${list.map(F.notiItem).join('')}</div>` : `<div class="card">${F.empty('bell', 'Chưa có thông báo', 'Bạn sẽ nhận thông báo khi chuyên gia trả lời phản biện hoặc có báo cáo mới theo lĩnh vực quan tâm.')}</div>`}
-      <p class="hint mt-12">Trên ứng dụng: Push Notification (FCM/APNs). Trên web: thông báo trong ứng dụng và Web Push (nếu cho phép).</p>`);
-    const ra = $('#ra'); if (ra) ra.onclick = () => { list.forEach((n) => (n.read = true)); F.save(); location.reload(); };
-  };
-
-  /* ================= R21 · Cài đặt & Quyền riêng tư ================= */
-  pages.settings = () => {
-    if (!needMember()) return; F.readerShell('me');
-    const me = F.me(); const bl = me.blocked.map(F.person);
-    app().innerHTML = accLayout('', `<div class="glabel" style="margin-top:0">Quyền riêng tư</div><div class="set-list">
-        <div class="set-item" style="align-items:flex-start"><span class="si">${I('ban')}</span><div class="grow"><b>Danh sách đã chặn</b><div class="small muted">${bl.length ? bl.length + ' chuyên gia' : 'Bạn chưa chặn ai'}</div>${bl.map((p) => `<div class="row mt-8">${F.avatar(p, 'sm')}<span class="grow small">${F.esc(p.name)}</span><button class="btn btn-secondary btn-xs" data-ub="${p.id}">Bỏ chặn</button></div>`).join('')}</div></div>
-        <label class="set-item" style="cursor:pointer"><span class="si">${I('mail')}</span><div class="grow"><b>Bản tin email hằng tuần</b><div class="small muted">Tóm tắt báo cáo mới theo lĩnh vực quan tâm</div></div><span class="switch"><input type="checkbox" id="nl" ${me.newsletter ? 'checked' : ''}><span></span></span></label>
-        <label class="set-item" style="cursor:pointer"><span class="si">${I('bell')}</span><div class="grow"><b>Thông báo khi chuyên gia trả lời</b><div class="small muted">In-app & Push</div></div><span class="switch"><input type="checkbox" checked><span></span></span></label></div>
-      <div class="glabel">Pháp lý</div><div class="set-list">
-        <a class="set-item" href="${F.url('reader/terms.html')}"><span class="si">${I('note')}</span><span class="grow">Điều khoản sử dụng (EULA)</span>${chev()}</a>
-        <a class="set-item" href="${F.url('reader/privacy.html')}"><span class="si">${I('shield')}</span><span class="grow">Chính sách bảo mật</span>${chev()}</a>
-        <a class="set-item" href="${F.url('reader/disclaimer.html')}"><span class="si">${I('info')}</span><span class="grow">Miễn trừ trách nhiệm đầu tư</span>${chev()}</a></div>
-      <div class="glabel">Tài khoản</div><div class="set-list">
-        <button class="set-item" id="lo"><span class="si">${I('logout')}</span><span class="grow">Đăng xuất</span></button>
-        <a class="set-item danger" href="${F.url('reader/delete-account.html')}"><span class="si">${I('trash')}</span><span class="grow"><b>Xóa tài khoản</b><div class="small" style="color:var(--text-3)">Xóa vĩnh viễn tài khoản và dữ liệu cá nhân</div></span>${chev()}</a></div>`);
-    $$('[data-ub]').forEach((b) => (b.onclick = () => { me.blocked = me.blocked.filter((x) => x !== b.dataset.ub); F.save(); F.toast('Đã bỏ chặn'); setTimeout(() => location.reload(), 400); }));
-    $('#nl').onchange = (e) => { me.newsletter = e.target.checked; F.save(); F.toast(e.target.checked ? 'Đã bật bản tin' : 'Đã tắt bản tin'); };
-    $('#lo').onclick = () => { F.logout(); sessionStorage.setItem('fbv-flash', 'Đã đăng xuất'); F.go('reader/index.html'); };
-  };
-
-  /* ================= R22 · Xóa tài khoản ================= */
-  pages.deleteAccount = () => {
-    if (!needMember()) return; F.readerShell('me');
-    const me = F.me(); const nInq = F.db().inquiries.filter((q) => q.reader === me.id).length;
-    app().innerHTML = `<div class="page narrow"><div class="card" id="dc" style="padding:22px 18px">
-      <div class="avatar md mb-16" style="background:var(--mkt-down-bg);color:var(--danger)">${I('trash')}</div><h1 style="font-size:22px">Xóa tài khoản vĩnh viễn</h1><p class="sub mt-8">Tài khoản <b style="word-break:break-all">${F.esc(me.email)}</b> và dữ liệu sau sẽ bị xóa, <b>không thể khôi phục</b>:</p>
-      <ul class="stack mt-16" style="list-style:none;gap:10px">${[['user', 'Hồ sơ cá nhân và lĩnh vực quan tâm'], ['bookmark', me.bookmarks.length + ' bài đã lưu'], ['message', nInq + ' phiên phản biện (nội dung của bạn được ẩn danh hóa để giữ mạch trao đổi của chuyên gia)'], ['bell', 'Thông báo và lịch sử đọc']].map((x) => `<li class="row" style="align-items:flex-start">${I(x[0]).replace('<svg', '<svg style="width:18px;height:18px;flex:none;color:var(--text-3);margin-top:2px"')}<span class="small">${x[1]}</span></li>`).join('')}</ul>
-      ${F.hasSub() ? `<div class="alert warn mt-16">${I('alert')}<span>Bạn đang có gói Premium. Nếu mua qua App Store/Google Play, hãy hủy gia hạn trong cài đặt của cửa hàng.</span></div>` : ''}
-      <div class="alert info mt-16">${I('info')}<span>Nếu bạn đăng nhập bằng Apple, FBV sẽ thu hồi token “Sign in with Apple” khi xóa tài khoản.</span></div>
-      <div class="field mt-24"><label for="rs">Lý do (không bắt buộc)</label><select class="select" id="rs"><option>— Chọn lý do —</option><option>Không còn nhu cầu sử dụng</option><option>Lo ngại về quyền riêng tư</option><option>Nội dung chưa phù hợp</option><option>Khác</option></select></div>
-      <div class="field mt-16"><label for="cf">Nhập <b>XÓA</b> để xác nhận</label><input class="input" id="cf" autocomplete="off" placeholder="XÓA"></div>
-      <div class="stack mt-24" style="gap:8px"><button class="btn btn-danger btn-lg btn-block" id="del" disabled>${I('trash')}Xóa tài khoản</button><a class="btn btn-ghost btn-block" href="${F.url('reader/settings.html')}">Hủy</a></div></div></div>`;
-    $('#cf').oninput = (e) => { $('#del').disabled = e.target.value.trim().toUpperCase() !== 'XÓA'; };
-    $('#del').onclick = () => {
-      const db = F.db(); db.inquiries.filter((q) => q.reader === me.id).forEach((q) => { q.status = 'closed'; q.messages.forEach((m) => { if (m.by === me.id) m.anon = true; }); });
-      db.notifications = db.notifications.filter((n) => n.user !== me.id);
-      Object.assign(me, { status: 'deleted', name: 'Tài khoản đã xóa', email: 'deleted-' + me.id, bookmarks: [], follows: [], interests: [] });
-      F.session().uid = null; F.session().subscription = null; F.save();
-      $('#dc').innerHTML = `<div class="center stack" style="align-items:center;padding:20px 0"><div class="avatar lg" style="background:#DCFCE7;color:#15803D">${I('checkCircle').replace('<svg', '<svg style="width:40px;height:40px"')}</div><h2>Tài khoản đã được xóa</h2><p class="sub">Dữ liệu cá nhân của bạn đã được xóa khỏi hệ thống. Cảm ơn bạn đã đồng hành cùng FBV.</p><a class="btn btn-primary" href="${F.url('reader/index.html')}">Về trang chủ</a></div>`;
-    };
-  };
-
-  /* ================= R23 · Trang pháp lý ================= */
-  const legal = (title, updated, sections) => { F.readerShell('me'); app().innerHTML = `<div class="page narrow"><div class="doc"><h1>${title}</h1><p class="small muted">Cập nhật lần cuối: ${updated} · <b>Bản mẫu cho prototype — cần pháp chế FBV hoàn thiện</b></p>${sections.map((s) => `<h2>${s[0]}</h2>${s[1]}`).join('')}</div></div>`; };
+  /* ================= L01–L03 · Pháp lý ================= */
+  const legal = (title, upd, secs) => { const v = F.shell({ bar: 'back', back: 'reader/settings.html', title: '' }); v.innerHTML = `<h1 class="large-title serif">${title}</h1><div class="legal"><p class="upd">Cập nhật ${upd} · Bản prototype</p>${secs.map((s) => `<h2>${s[0]}</h2>${s[1]}`).join('')}<div class="mt-24">${F.footLinks()}</div></div>`; document.title = title + ' · FBV'; };
   pages.terms = () => legal('Điều khoản sử dụng (EULA)', '01/09/2026', [
-    ['1. Phạm vi áp dụng', '<p>Điều khoản này điều chỉnh việc bạn truy cập và sử dụng ứng dụng, website FBV (“Dịch vụ”). Bằng việc tạo tài khoản, bạn đồng ý tuân thủ Điều khoản.</p>'],
-    ['2. Tài khoản', '<p>Bạn chịu trách nhiệm bảo mật email đăng nhập. Mỗi người chỉ sử dụng một tài khoản. Bạn có thể xóa tài khoản bất kỳ lúc nào trong mục Cài đặt.</p>'],
-    ['3. Nội dung người dùng & không dung thứ vi phạm', '<p>Trong không gian phản biện 1:1, bạn cam kết <b>không</b> đăng tải nội dung:</p><ul><li>Xúc phạm, quấy rối, phân biệt đối xử, đe dọa;</li><li>Spam, quảng cáo, lôi kéo tham gia nhóm “phím hàng”, tư vấn đầu tư trái phép;</li><li>Thông tin sai lệch nhằm thao túng thị trường;</li><li>Vi phạm quyền sở hữu trí tuệ hoặc quyền riêng tư của người khác.</li></ul><p>FBV <b>không dung thứ</b> nội dung phản cảm hoặc hành vi lạm dụng. Người dùng có thể Báo cáo và Chặn; FBV xử lý báo cáo trong vòng 24 giờ, gỡ nội dung và khóa tài khoản vi phạm.</p>'],
-    ['4. Sở hữu trí tuệ', '<p>Báo cáo, biểu đồ, dữ liệu tổng hợp thuộc quyền sở hữu của FBV và/hoặc tác giả. Bạn được trích dẫn có ghi nguồn cho mục đích cá nhân, học thuật; không sao chép, phân phối lại cho mục đích thương mại.</p>'],
-    ['5. Không phải khuyến nghị đầu tư', '<p>Nội dung trên FBV chỉ mang tính nghiên cứu, thông tin. Xem thêm <a href="disclaimer.html">Tuyên bố miễn trừ trách nhiệm</a>.</p>'],
-    ['6. Gói trả phí (Phase 2)', '<p>Gói hội viên tự động gia hạn cho đến khi bạn hủy. Giao dịch trên iOS/Android thực hiện qua App Store/Google Play; trên web qua cổng thanh toán được cấp phép.</p>'],
-    ['7. Liên hệ', '<p>Mọi thắc mắc vui lòng gửi về support@fbv.example.</p>']]);
+    ['1. Phạm vi dịch vụ', '<p>FBV cung cấp báo cáo nghiên cứu kinh tế – tài chính, dữ liệu thị trường có độ trễ và không gian trao đổi học thuật 1:1 giữa độc giả và chuyên gia (“Dịch vụ”).</p>'],
+    ['2. Tài khoản', '<p>Bạn có thể dùng Dịch vụ ở chế độ Khách hoặc đăng nhập bằng Email + OTP, Sign in with Apple, Google. Bạn chịu trách nhiệm bảo mật thiết bị và email của mình.</p>'],
+    ['3. Nội dung do người dùng tạo', '<ul><li>Không đăng nội dung xúc phạm, quấy rối, spam, quảng cáo hoặc lôi kéo giao dịch;</li><li>FBV không dung thứ nội dung phản cảm hoặc hành vi lạm dụng: nội dung vi phạm bị gỡ và tài khoản vi phạm bị khóa trong vòng 24 giờ kể từ khi nhận báo cáo;</li><li>Mỗi phiên phản biện có chức năng Báo cáo vi phạm và Chặn người dùng.</li></ul>'],
+    ['4. Sở hữu trí tuệ', '<p>Báo cáo, dữ liệu và thiết kế thuộc quyền sở hữu của FBV và tác giả. Không sao chép, phân phối lại cho mục đích thương mại khi chưa có sự đồng ý bằng văn bản.</p>'],
+    ['5. Thuê bao (Phase 2)', '<p>Gói hội viên được thanh toán qua Apple In-App Purchase hoặc Google Play Billing, tự động gia hạn trừ khi hủy ít nhất 24 giờ trước kỳ gia hạn. Quản lý và hủy trong cài đặt tài khoản cửa hàng; dùng “Khôi phục giao dịch” khi đổi thiết bị.</p>'],
+    ['6. Chấm dứt', '<p>Bạn có thể xóa tài khoản bất kỳ lúc nào trong ứng dụng (Cài đặt → Tài khoản → Xóa tài khoản).</p>']]);
   pages.privacy = () => legal('Chính sách bảo mật', '01/09/2026', [
-    ['1. Dữ liệu chúng tôi thu thập', '<ul><li>Thông tin tài khoản: email, họ tên, danh mục quan tâm;</li><li>Dữ liệu sử dụng: báo cáo đã đọc, bài đã lưu, nội dung phản biện;</li><li>Dữ liệu kỹ thuật: loại thiết bị, token thông báo.</li></ul>'],
-    ['2. Mục đích sử dụng', '<p>Cung cấp và cá nhân hóa Dịch vụ, gửi thông báo, kiểm duyệt nội dung vi phạm và cải thiện sản phẩm. FBV <b>không bán</b> dữ liệu cá nhân.</p>'],
-    ['3. Xử lý bởi AI', '<p>Nội dung báo cáo (không phải dữ liệu cá nhân) được xử lý bởi Google Vertex AI để gợi ý chỉ số liên quan tại thời điểm xuất bản.</p>'],
-    ['4. Quyền của bạn', '<p>Bạn có quyền truy cập, chỉnh sửa, xóa dữ liệu và <b>xóa tài khoản trực tiếp trong ứng dụng</b> (Cài đặt → Xóa tài khoản).</p>'],
-    ['5. Lưu trữ & bảo mật', '<p>Dữ liệu được mã hóa khi truyền và lưu trữ trên hạ tầng Google Cloud. Dữ liệu của tài khoản đã xóa được loại bỏ trong vòng 30 ngày, trừ khi pháp luật yêu cầu lưu giữ.</p>']]);
-  pages.disclaimer = () => legal('Tuyên bố miễn trừ trách nhiệm đầu tư', '01/09/2026', [
-    ['Nội dung không phải khuyến nghị đầu tư', '<p>Các báo cáo, phân tích, dữ liệu và trao đổi trên FBV được cung cấp cho mục đích nghiên cứu, học thuật và thông tin. Nội dung không cấu thành lời mời, chào mua, khuyến nghị mua, bán hoặc nắm giữ bất kỳ chứng khoán, tài sản tài chính nào.</p>'],
-    ['Dữ liệu thị trường', '<p>Dữ liệu chỉ số chứng khoán có độ trễ tối thiểu 15 phút; dữ liệu vĩ mô được cập nhật theo kỳ công bố của cơ quan có thẩm quyền. FBV không bảo đảm tính đầy đủ, chính xác tuyệt đối của dữ liệu từ bên thứ ba.</p>'],
-    ['Quan điểm của tác giả', '<p>Quan điểm trong báo cáo thuộc về tác giả tại thời điểm công bố và có thể thay đổi mà không cần thông báo. Người đọc tự chịu trách nhiệm với quyết định của mình và nên tham khảo ý kiến tổ chức tư vấn được cấp phép.</p>']]);
+    ['1. Dữ liệu thu thập', '<ul><li>Thông tin tài khoản: email, họ tên, lĩnh vực quan tâm;</li><li>Dữ liệu sử dụng: báo cáo đã đọc, đã lưu, nội dung phản biện;</li><li>Dữ liệu kỹ thuật: loại thiết bị, token thông báo.</li></ul>'],
+    ['2. Mục đích', '<p>Cung cấp và cá nhân hóa Dịch vụ, gửi thông báo, kiểm duyệt nội dung vi phạm và cải thiện sản phẩm. FBV <b>không bán</b> dữ liệu cá nhân.</p>'],
+    ['3. Xử lý bởi AI', '<p>Nội dung báo cáo (không phải dữ liệu cá nhân) được Google Vertex AI xử lý trên máy chủ tại thời điểm xuất bản để gợi ý chỉ số liên quan.</p>'],
+    ['4. Quyền của bạn', '<p>Truy cập, chỉnh sửa, tải xuống, xóa dữ liệu và <b>xóa tài khoản trực tiếp trong ứng dụng</b>.</p>'],
+    ['5. Lưu trữ & bảo mật', '<p>Dữ liệu được mã hóa khi truyền và lưu trữ trên Google Cloud. Dữ liệu của tài khoản đã xóa được loại bỏ trong vòng 30 ngày, trừ khi pháp luật yêu cầu lưu giữ.</p>']]);
+  pages.disclaimer = () => legal('Miễn trừ trách nhiệm đầu tư', '01/09/2026', [
+    ['Không phải khuyến nghị đầu tư', '<p>Báo cáo, phân tích, dữ liệu và trao đổi trên FBV phục vụ mục đích nghiên cứu, học thuật và thông tin; không cấu thành lời mời, chào mua, khuyến nghị mua, bán hoặc nắm giữ bất kỳ tài sản tài chính nào.</p>'],
+    ['Dữ liệu thị trường', '<p>Dữ liệu chứng khoán có độ trễ tối thiểu 15 phút; dữ liệu vĩ mô cập nhật theo kỳ công bố của cơ quan có thẩm quyền. FBV không bảo đảm tính đầy đủ, chính xác tuyệt đối của dữ liệu bên thứ ba.</p>'],
+    ['Quan điểm của tác giả', '<p>Quan điểm thuộc về tác giả tại thời điểm công bố và có thể thay đổi mà không cần thông báo. Người đọc tự chịu trách nhiệm với quyết định của mình.</p>']]);
 
-  const PLANS = { monthly: { name: 'Tháng', price: 199000, per: '/tháng', note: 'Linh hoạt, hủy bất cứ lúc nào' }, quarterly: { name: 'Quý', price: 549000, per: '/quý', note: 'Tiết kiệm 8%' }, yearly: { name: 'Năm', price: 1990000, per: '/năm', note: 'Tiết kiệm 17% · Phổ biến nhất', best: true }, single: { name: 'Mua lẻ báo cáo', price: 79000, per: '/báo cáo', note: 'Mở khóa vĩnh viễn 1 báo cáo đặc biệt' } };
+  /* ================= PHASE 2 ================= */
+  const PLANS = { monthly: { name: 'Tháng', price: 199000, per: '/tháng', note: 'Linh hoạt, hủy bất kỳ lúc nào' }, quarterly: { name: 'Quý', price: 549000, per: '/quý', note: 'Tiết kiệm 8%' }, yearly: { name: 'Năm', price: 1990000, per: '/năm', note: 'Tiết kiệm 17% · Phổ biến nhất', best: true }, single: { name: 'Mở khóa 1 báo cáo', price: 79000, per: '/báo cáo', note: 'Sở hữu vĩnh viễn một báo cáo đặc biệt' } };
   F.PLANS = PLANS;
-  const p2Banner = () => (F.session().phase2 ? '' : `<div class="alert warn mb-24">${I('alert')}<span class="grow">Đây là màn hình <b>Phase 2 (mô phỏng)</b>. Bật “Mô phỏng Phase 2” trên thanh Demo để thấy Paywall trên báo cáo Premium.</span><button class="btn btn-sm btn-secondary" id="p2on">Bật ngay</button></div>`);
+  const p2Note = () => (F.session().phase2 ? '' : `<div class="note warn mb-16">${I('alert')}<span class="grow">Màn hình <b>Phase 2</b> (mô phỏng). Bật “Mô phỏng Phase 2” trên nút Demo để thấy Paywall trên báo cáo Premium.</span><button class="btn btn-gray btn-xs" id="p2on">Bật</button></div>`);
   const bindP2 = () => { const b = $('#p2on'); if (b) b.onclick = () => { F.session().phase2 = true; F.save(); location.reload(); }; };
-  /* ================= P02 · Bảng giá (mobile-first) ================= */
+  const restore = () => { const m = F.modal({ title: 'Khôi phục giao dịch', dismissable: false, body: `<div class="empty" style="padding:16px 0"><div class="spinner"></div><p class="mt-12">Đang kiểm tra giao dịch với App Store / Google Play…</p></div>` }); setTimeout(() => { m.close(); F.toast(F.hasSub() ? 'Gói Premium của bạn đang hoạt động' : 'Không tìm thấy giao dịch trước đó cho tài khoản này', 'info'); }, 1200); };
+  F.restorePurchases = restore;
+  const PERKS = [['unlock', 'Đọc toàn văn mọi báo cáo', 'Bảng số liệu, infographic và bản PDF chuyên sâu'], ['chat', 'Phản biện 1:1 không giới hạn', 'Không giới hạn số phiên trao đổi với chuyên gia'], ['video', 'Buổi trao đổi kín định kỳ', 'Gặp chuyên gia FBV trực tuyến hằng tháng'], ['download', 'Tải PDF đọc ngoại tuyến', 'Lưu trữ tài liệu dài kỳ trên thiết bị']];
+
+  /* P01 · Gói hội viên */
   pages.pricing = () => {
-    F.readerShell('me');
-    const rid = F.param('r'); const r = rid && F.report(rid); let sel = 'yearly';
-    const feat = ['Toàn văn mọi báo cáo Premium & bản PDF', 'Phản biện 1:1 không giới hạn', 'Buổi trao đổi kín định kỳ cùng chuyên gia', 'Đồng bộ quyền lợi trên web & ứng dụng'];
-    app().innerHTML = `<div class="page">${p2Banner()}<div class="cta-card mb-24" style="text-align:center;padding:26px 20px"><span class="badge premium">${I('crown').replace('<svg', '<svg style="width:12px;height:12px"')} FBV Premium</span><h1 class="mt-12" style="color:#fff;font-size:24px">Nâng cấp trải nghiệm nghiên cứu</h1><p style="max-width:560px;margin:8px auto 0">${r ? `Mở khóa “${F.esc(r.title)}” và toàn bộ thư viện báo cáo chuyên sâu.` : 'Truy cập toàn bộ báo cáo chuyên sâu và trao đổi trực tiếp không giới hạn với chuyên gia FBV.'}</p></div>
-      <div class="plans" id="pl" role="radiogroup" aria-label="Chọn gói">${Object.entries(PLANS).map(([k, p]) => `<button class="plan ${k === sel ? 'on' : ''}" data-p="${k}" role="radio" aria-checked="${k === sel}">${p.best ? '<span class="ribbon">Phổ biến nhất</span>' : ''}<span class="row between" style="width:100%"><b style="font-size:16px">${p.name}</b><span class="price num">${F.num(p.price)}đ<small>${p.per}</small></span></span><span class="small muted">${p.note}</span><ul>${(k === 'single' ? ['Toàn văn & PDF của 1 báo cáo', '1 phiên phản biện ưu tiên với tác giả'] : feat).map((f) => `<li>${I('check')}${f}</li>`).join('')}</ul></button>`).join('')}</div>
-      <section class="sec">${F.secHead('So sánh quyền lợi')}<div class="table-wrap"><table class="table compare"><thead><tr><th>Quyền lợi</th><th>Miễn phí</th><th>Premium</th></tr></thead><tbody>
-      ${[['Đọc báo cáo tiêu chuẩn', 1, 1], ['Tóm tắt điều hành báo cáo Premium', 1, 1], ['Toàn văn & PDF báo cáo Premium', 0, 1], ['Dữ liệu thị trường & vĩ mô', 1, 1], ['Phản biện 1:1', '3 / 30 ngày', 'Không giới hạn'], ['Buổi trao đổi kín định kỳ', 0, 1]].map((x) => `<tr><td>${x[0]}</td>${[x[1], x[2]].map((v) => `<td>${v === 1 ? I('check') : v === 0 ? '<span class="muted">—</span>' : `<span class="small">${v}</span>`}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-      <p class="hint mt-12">Trên web: thanh toán qua cổng nội địa. Trên iOS/Android: Apple In-App Purchase / Google Play Billing. Quyền lợi đồng bộ theo tài khoản FBV.</p></section>
-      <div class="ctabar"><div class="ct-row"><div class="grow"><span class="xs muted">Gói đã chọn</span><div><b class="num" id="pp">${F.num(PLANS[sel].price)}đ</b> <span class="small muted" id="pper">${PLANS[sel].per}</span></div></div><button class="btn btn-primary btn-lg" id="buy" style="min-width:160px">Tiếp tục</button></div></div></div>`;
+    const r = F.report(F.param('r'));
+    const v = F.shell({ side: 'me', bar: 'close', back: r ? 'reader/report.html?id=' + r.id : 'reader/settings.html', notab: true, title: '' });
+    let plan = 'yearly';
+    const keys = ['monthly', 'quarterly', 'yearly'].concat(r && r.premium ? ['single'] : []);
+    v.innerHTML = `<div class="page" style="padding-bottom:170px">${p2Note()}<div class="auth-hero" style="padding-top:4px">${F.logoMark()}<h1>FBV Premium</h1><p>Toàn bộ nghiên cứu chuyên sâu và quyền tương tác cao cấp cùng chuyên gia đã được FBV thẩm định.</p></div>
+      ${F.hasSub() ? `<div class="note ok mb-16">${I('checkCircle')}<span>Bạn đang dùng <b>Premium — ${PLANS[F.session().subscription.plan].name}</b>. <a class="link" href="${F.url('reader/subscription.html')}">Quản lý gói</a></span></div>` : ''}
+      <div>${PERKS.map((p) => `<div class="perk"><span class="ic">${I(p[0])}</span><div><b>${p[1]}</b><small>${p[2]}</small></div></div>`).join('')}</div>
+      <div class="group-title mt-24">Chọn gói</div><div class="stack" id="pl"></div>
+      <p class="hint mt-16">Thanh toán qua Apple In-App Purchase hoặc Google Play Billing. Gói tự động gia hạn trừ khi hủy ít nhất 24 giờ trước kỳ gia hạn. <a class="link" href="${F.url('reader/terms.html')}">Điều khoản</a></p></div>
+      <div class="bottom-cta"><div class="inner"><a class="btn btn-primary btn-pill btn-block" id="buy"></a><button class="btn btn-ghost btn-block" id="rst">Khôi phục giao dịch</button></div></div>`;
     bindP2();
-    $$('#pl .plan').forEach((b) => (b.onclick = () => { sel = b.dataset.p; $$('#pl .plan').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); $('#pp').textContent = F.num(PLANS[sel].price) + 'đ'; $('#pper').textContent = PLANS[sel].per; }));
-    $('#buy').onclick = () => { if (sel === 'single' && !rid) { F.toast('Hãy chọn “Mua lẻ báo cáo này” từ một báo cáo Premium', 'info'); return; } F.go('reader/checkout.html?plan=' + sel + (rid ? '&r=' + rid : '')); };
-  };
-
-  /* ================= P03 · Thanh toán (mock) ================= */
-  pages.checkout = () => {
-    if (!needMember()) return; F.readerShell('me');
-    const plan = PLANS[F.param('plan')] ? F.param('plan') : 'yearly'; const p = PLANS[plan]; const r = F.report(F.param('r') || '');
-    const vat = Math.round(p.price / 11);
-    app().innerHTML = `<div class="page narrow" id="co">${p2Banner()}
-      <div class="card mb-16"><div class="row between"><div><span class="xs muted">Gói</span><h3>FBV Premium — ${p.name}</h3>${r && plan === 'single' ? `<div class="xs muted mt-8">${F.esc(r.title)}</div>` : ''}</div><a class="small" href="${F.url('reader/pricing.html' + (r ? '?r=' + r.id : ''))}">Đổi gói</a></div>
-        <div class="stack small mt-16"><div class="row between"><span class="muted">Giá</span><span class="num">${F.num(p.price)}đ</span></div><div class="row between"><span class="muted">Trong đó VAT (10%)</span><span class="num">${F.num(vat)}đ</span></div>${plan !== 'single' ? '<div class="row between"><span class="muted">Gia hạn</span><span>Tự động, hủy bất cứ lúc nào</span></div>' : ''}</div></div>
-      <div class="glabel" style="margin-top:0">Phương thức thanh toán</div>
-      <div class="radio-list" id="pm">${[['vnpay', 'VNPay QR', 'Quét mã bằng ứng dụng ngân hàng', 'grid'], ['momo', 'Ví MoMo', 'Thanh toán qua ví điện tử', 'wallet'], ['card', 'Thẻ quốc tế', 'Visa, Mastercard, JCB', 'card'], ['bank', 'Chuyển khoản ngân hàng', 'Kích hoạt sau đối soát (≤ 2 giờ)', 'building']].map((m, i) => `<label style="background:#fff"><input type="radio" name="pm" value="${m[0]}" ${i ? '' : 'checked'}><span class="avatar sm" style="background:var(--field);color:var(--text-2)">${I(m[3]).replace('<svg', '<svg style="width:16px;height:16px"')}</span><span class="grow"><b>${m[1]}</b><span class="xs muted" style="display:block">${m[2]}</span></span></label>`).join('')}</div>
-      <div class="field mt-16"><label for="inv">Xuất hóa đơn doanh nghiệp (không bắt buộc)</label><input class="input" id="inv" placeholder="Mã số thuế" style="background:#fff"></div>
-      <div class="perm-note mt-16">${I('lock')}<span>Prototype không kết nối cổng thanh toán thật và không thu thập thông tin thẻ.</span></div>
-      <div class="ctabar"><div class="ct-row"><div class="grow"><span class="xs muted">Tổng thanh toán</span><div><b class="num">${F.num(p.price)}đ</b></div></div><button class="btn btn-primary btn-lg" id="pay" style="min-width:160px">Thanh toán</button></div><button class="btn btn-ghost btn-sm" id="fail">Mô phỏng thanh toán thất bại</button></div></div>`;
-    bindP2();
-    const result = (ok) => {
-      const m = F.modal({ title: 'Đang xử lý thanh toán…', dismissable: false, body: `<div class="ai-loading"><div class="spinner"></div><span>Đang chờ xác nhận từ cổng thanh toán</span></div>` });
-      setTimeout(() => { m.close(); const s = F.session();
-        if (ok) { if (plan === 'single') { s.unlocked = s.unlocked || []; if (r) s.unlocked.push(r.id); } else { const days = plan === 'monthly' ? 30 : plan === 'quarterly' ? 91 : 365; s.subscription = { plan, start: new Date().toISOString(), renew: new Date(Date.now() + days * 864e5).toISOString(), method: $('input[name=pm]:checked').value, price: p.price }; } s.phase2 = true; F.save(); }
-        document.body.classList.remove('has-cta');
-        $('#co').innerHTML = ok ? `<div class="card center" style="padding:36px 20px"><div class="avatar lg" style="background:#DCFCE7;color:#15803D;margin:0 auto">${I('checkCircle').replace('<svg', '<svg style="width:40px;height:40px"')}</div><h2 class="mt-16">Thanh toán thành công</h2><p class="sub mt-8">${plan === 'single' ? 'Báo cáo đã được mở khóa vĩnh viễn cho tài khoản của bạn.' : 'Chào mừng bạn đến với FBV Premium! Quyền lợi đã kích hoạt trên web và ứng dụng.'}</p><div class="stack mt-24" style="gap:8px">${r ? `<a class="btn btn-primary btn-block" href="${F.url('reader/report.html?id=' + r.id)}">Đọc báo cáo ngay</a>` : `<a class="btn btn-primary btn-block" href="${F.url('reader/index.html')}">Khám phá báo cáo</a>`}${plan !== 'single' ? `<a class="btn btn-secondary btn-block" href="${F.url('reader/subscription.html')}">Xem gói của tôi</a>` : ''}</div></div>`
-          : `<div class="card center" style="padding:36px 20px"><div class="avatar lg" style="background:var(--mkt-down-bg);color:var(--danger);margin:0 auto">${I('xCircle').replace('<svg', '<svg style="width:40px;height:40px"')}</div><h2 class="mt-16">Thanh toán chưa thành công</h2><p class="sub mt-8">Giao dịch bị hủy hoặc hết thời gian chờ. Bạn chưa bị trừ tiền.</p><div class="stack mt-24" style="gap:8px"><a class="btn btn-primary btn-block" href="">Thử lại</a><a class="btn btn-secondary btn-block" href="${F.url('reader/pricing.html')}">Chọn gói khác</a></div></div>`;
-      }, 1400);
+    const draw = () => {
+      $('#pl').innerHTML = keys.map((k) => { const p = PLANS[k]; return `<label class="plan ${plan === k ? 'on' : ''}"><input type="radio" name="pl" value="${k}" ${plan === k ? 'checked' : ''}><span class="rd"></span><span class="t"><b>${p.name}${p.best ? '<span class="tag accent">Phổ biến</span>' : ''}</b><small>${k === 'single' ? F.esc(r.title) : p.note}</small></span><span class="p num">${F.num(p.price)}đ<small>${p.per}</small></span></label>`; }).join('');
+      $$('input[name=pl]').forEach((x) => (x.onchange = () => { plan = x.value; draw(); }));
+      const p = PLANS[plan]; const b = $('#buy'); b.textContent = plan === 'single' ? `Mở khóa · ${F.num(p.price)}đ` : `Đăng ký · ${F.num(p.price)}đ${p.per}`; b.href = F.url('reader/checkout.html?plan=' + plan + (r ? '&r=' + r.id : ''));
     };
-    $('#pay').onclick = () => result(true); $('#fail').onclick = () => result(false);
+    draw();
+    $('#buy').addEventListener('click', (e) => { if (!F.isMember()) { e.preventDefault(); F.requireAuth('Đăng nhập để đăng ký gói hội viên và đồng bộ quyền lợi trên mọi thiết bị.'); } });
+    $('#rst').onclick = restore;
   };
 
-  /* ================= P04 · Gói của tôi ================= */
+  /* P02 · Thanh toán (mô phỏng IAP) */
+  pages.checkout = () => {
+    const plan = PLANS[F.param('plan')] ? F.param('plan') : 'yearly'; const p = PLANS[plan]; const r = F.report(F.param('r')); const me = F.me();
+    const v = F.shell({ side: 'me', bar: 'close', back: 'reader/pricing.html' + (r ? '?r=' + r.id : ''), notab: true, title: 'Xác nhận thanh toán' });
+    if (!me) { v.innerHTML = F.gate('card', 'Đăng nhập để thanh toán', 'Gói hội viên gắn với tài khoản FBV của bạn.'); return; }
+    let store = /Android/i.test(navigator.userAgent) ? 'google' : 'apple';
+    const renew = new Date(Date.now() + ({ monthly: 30, quarterly: 91, yearly: 365 }[plan] || 0) * 864e5);
+    const draw = () => {
+      v.innerHTML = `<div class="page stack lg" style="padding-top:8px">${p2Note()}<div class="seg full"><button class="${store === 'apple' ? 'on' : ''}" data-st="apple">App Store</button><button class="${store === 'google' ? 'on' : ''}" data-st="google">Google Play</button></div>
+        <div class="iap"><div class="iap-h">${F.logoMark('logo-mark')}<div class="grow"><b>FBV Premium — ${p.name}</b><div class="small muted">FBV Research · ${store === 'apple' ? 'Đăng ký trong ứng dụng' : 'Google Play Billing'}</div></div></div>
+          ${plan === 'single' && r ? `<div class="iap-row"><span>Báo cáo</span><b class="clamp2" style="text-align:right;max-width:60%">${F.esc(r.title)}</b></div>` : ''}
+          <div class="iap-row"><span>Giá</span><b class="num">${F.num(p.price)}đ${p.per}</b></div>
+          ${plan === 'single' ? '<div class="iap-row"><span>Loại</span><b>Mua một lần</b></div>' : `<div class="iap-row"><span>Gia hạn</span><b>Tự động · ${F.date(renew)}</b></div>`}
+          <div class="iap-row" style="border-bottom:0"><span>Tài khoản</span><b>${F.esc(me.email)}</b></div></div>
+        <button class="btn ${store === 'apple' ? 'btn-white' : 'btn-primary'} btn-pill btn-block" id="pay">${store === 'apple' ? `${F.appleIcon()}Xác nhận bằng Face ID` : 'Đăng ký với Google Play'}</button>
+        <p class="hint center">Đây là màn hình mô phỏng — không có giao dịch thật. ${plan === 'single' ? '' : 'Hủy bất kỳ lúc nào trong cài đặt cửa hàng.'}</p></div>`;
+      bindP2();
+      $$('[data-st]').forEach((b) => (b.onclick = () => { store = b.dataset.st; draw(); }));
+      $('#pay').onclick = () => {
+        const m = F.modal({ title: 'Đang xử lý', dismissable: false, body: `<div class="empty" style="padding:16px 0"><div class="spinner"></div><p class="mt-12">Đang xác nhận với ${store === 'apple' ? 'App Store' : 'Google Play'}…</p></div>` });
+        setTimeout(() => {
+          m.close(); const s = F.session(); s.phase2 = true;
+          if (plan === 'single') { s.unlocked = (s.unlocked || []).concat(r ? [r.id] : []); } else s.subscription = { plan, store, since: new Date().toISOString(), renew: renew.toISOString(), autoRenew: true };
+          F.save();
+          v.innerHTML = `<div class="page"><div class="empty" style="padding-top:48px"><div class="ico" style="width:72px;height:72px;background:var(--accent-soft);color:var(--accent)">${I(plan === 'single' ? 'unlock' : 'crown')}</div><h3 class="serif" style="font-size:24px">${plan === 'single' ? 'Đã mở khóa báo cáo' : 'Chào mừng đến FBV Premium'}</h3><p>${plan === 'single' ? 'Báo cáo đã được thêm vào tài khoản của bạn vĩnh viễn.' : 'Mọi báo cáo chuyên sâu, PDF và phản biện 1:1 không giới hạn đã được mở.'}</p><a class="btn btn-primary btn-pill" style="min-width:220px" href="${F.url(r ? 'reader/report.html?id=' + r.id : 'reader/index.html')}">${r ? 'Đọc báo cáo' : 'Bắt đầu đọc'}</a>${plan === 'single' ? '' : `<a class="btn btn-ghost" href="${F.url('reader/subscription.html')}">Quản lý gói</a>`}</div></div>`;
+        }, 1400);
+      };
+    };
+    draw();
+  };
+
+  /* P03 · Quản lý gói */
   pages.subscription = () => {
-    if (!needMember()) return; F.readerShell('me');
-    const s = F.session(); const sub = s.subscription;
-    app().innerHTML = accLayout('', `${p2Banner()}${sub ? `<div class="cta-card mb-16"><span class="badge premium">${I('crown').replace('<svg', '<svg style="width:12px;height:12px"')} Premium</span><h2 style="color:#fff" class="mt-8">Gói ${PLANS[sub.plan].name}</h2><div class="num mt-8" style="font-size:24px;font-weight:700">${F.num(sub.price)}đ<span style="font-size:13px;font-weight:500;color:#B8C7DD">${PLANS[sub.plan].per}</span></div><p class="small" style="margin-bottom:0">${sub.cancelled ? 'Đã hủy gia hạn · hiệu lực đến ' : 'Tự động gia hạn ngày '}${F.date(sub.renew)}</p></div>
-      <div class="glabel">Lịch sử giao dịch</div><div class="set-list"><div class="set-item"><span class="si">${I('card')}</span><span class="grow"><b>FBV Premium — Gói ${PLANS[sub.plan].name}</b><div class="xs muted">${F.date(sub.start)} · ${{ vnpay: 'VNPay QR', momo: 'Ví MoMo', card: 'Thẻ quốc tế', bank: 'Chuyển khoản' }[sub.method] || 'Web'}</div></span><b class="num small">${F.num(sub.price)}đ</b></div></div>
-      <div class="set-list mt-16">${sub.cancelled ? '' : `<button class="set-item" id="cc" style="color:var(--danger)"><span class="si">${I('xCircle')}</span><span class="grow">Hủy gia hạn</span></button>`}<button class="set-item" id="rst"><span class="si">${I('refresh')}</span><span class="grow">Khôi phục giao dịch</span></button></div>`
-      : `<div class="card">${F.empty('crown', 'Bạn đang dùng gói Miễn phí', 'Nâng cấp Premium để đọc toàn văn báo cáo chuyên sâu và phản biện 1:1 không giới hạn.', `<a class="btn btn-primary" href="${F.url('reader/pricing.html')}">Xem các gói</a>`)}</div><div class="set-list mt-16"><button class="set-item" id="rst"><span class="si">${I('refresh')}</span><span class="grow">Khôi phục giao dịch</span></button></div>`}`);
+    const me = F.me(); const s = F.session();
+    const v = F.shell({ side: 'me', bar: 'back', back: 'reader/settings.html', title: 'Gói hội viên' });
+    if (!me) { v.innerHTML = F.gate('card', 'Đăng nhập để quản lý gói', 'Xem gói đang dùng, gia hạn và khôi phục giao dịch.'); return; }
+    const sub = s.subscription; const un = (s.unlocked || []).map(F.report).filter(Boolean);
+    v.innerHTML = `<div class="page groups" style="padding-top:12px">${p2Note()}
+      ${sub ? `<div class="panel" style="padding:18px"><div class="row"><span class="ib" style="width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center">${I('crown')}</span><div class="grow"><b style="font-size:17px">FBV Premium — ${PLANS[sub.plan].name}</b><div class="small muted">${sub.store === 'apple' ? 'App Store' : 'Google Play'} · ${F.num(PLANS[sub.plan].price)}đ${PLANS[sub.plan].per}</div></div></div>
+          <div class="stat-grid mt-16" style="background:var(--bg-elev-2)"><div><span>Bắt đầu</span><b>${F.date(sub.since)}</b></div><div><span>${sub.autoRenew ? 'Gia hạn' : 'Hết hạn'}</span><b>${F.date(sub.renew)}</b></div></div></div>
+        <div class="group"><a class="gi" href="${F.url('reader/pricing.html')}">${I('refresh')}<span class="gl">Đổi gói</span>${I('chevR', 'chev')}</a><button class="gi" id="store">${I('external')}<span class="gl">Quản lý trên ${sub.store === 'apple' ? 'App Store' : 'Google Play'}</span>${I('arrowUR', 'chev')}</button><button class="gi" id="rst">${I('restore')}<span class="gl">Khôi phục giao dịch</span>${I('chevR', 'chev')}</button><a class="gi" href="${F.url('reader/sessions.html')}">${I('video')}<span class="gl">Buổi trao đổi kín</span>${I('chevR', 'chev')}</a></div>
+        ${sub.autoRenew ? `<div class="group"><button class="gi center danger" id="cancel"><span class="gl">Hủy gia hạn tự động</span></button></div>` : `<div class="note">${I('info')}<span>Đã tắt gia hạn. Quyền Premium duy trì đến ${F.date(sub.renew)}.</span></div>`}`
+        : `<div class="panel center" style="padding:24px 18px"><div class="empty" style="padding:0"><div class="ico">${I('card')}</div><h3>Bạn đang dùng gói Miễn phí</h3><p>Đọc báo cáo tiêu chuẩn và ${F.db().config.quotaPerMonth} phiên phản biện mỗi 30 ngày.</p><a class="btn btn-primary btn-pill" href="${F.url('reader/pricing.html')}">Xem gói Premium</a></div></div><div class="group"><button class="gi" id="rst">${I('restore')}<span class="gl">Khôi phục giao dịch</span>${I('chevR', 'chev')}</button></div>`}
+      ${un.length ? `<div><div class="group-title">Báo cáo đã mở khóa</div><div class="group">${un.map((r) => `<a class="gi" href="${F.url('reader/report.html?id=' + r.id)}">${I('unlock')}<span class="gl" style="font-weight:500">${F.esc(r.title)}</span>${I('chevR', 'chev')}</a>`).join('')}</div></div>` : ''}</div>`;
     bindP2();
-    const cc = $('#cc'); if (cc) cc.onclick = () => F.confirm('Hủy gia hạn tự động?', 'Bạn vẫn dùng Premium đến hết ngày ' + F.date(sub.renew) + '. Sau đó tài khoản chuyển về gói Miễn phí.', 'Hủy gia hạn', 'btn-danger', () => { sub.cancelled = true; F.save(); F.toast('Đã hủy gia hạn'); setTimeout(() => location.reload(), 400); });
-    const rs = $('#rst'); if (rs) rs.onclick = () => F.modal({ title: 'Khôi phục giao dịch', body: `<p class="sub">Tính năng <b>Restore Purchases</b> dành cho ứng dụng iOS/Android: đồng bộ lại các giao dịch đã mua qua App Store hoặc Google Play với tài khoản FBV.</p><p class="sub mt-12">Trên web, quyền lợi được đồng bộ tự động theo tài khoản — không cần khôi phục thủ công.</p>`, actions: [{ label: 'Đã hiểu', cls: 'btn-primary' }] });
+    $('#rst').onclick = restore;
+    const st = $('#store'); if (st) st.onclick = () => F.toast('Mô phỏng: mở trang quản lý đăng ký của cửa hàng', 'info');
+    const c = $('#cancel'); if (c) c.onclick = () => F.confirm('Hủy gia hạn tự động?', 'Bạn vẫn giữ quyền Premium đến hết kỳ hiện tại (' + F.date(sub.renew) + ').', 'Hủy gia hạn', 'btn-danger', () => { sub.autoRenew = false; F.save(); location.reload(); });
   };
 
-  /* ================= HUB · Danh mục màn hình ================= */
-  pages.hub = () => {
-    const S = [
-      ['Hệ tri thức — Độc giả (mobile-first)', [['K01', 'reader/index.html', 'Khám phá', 'Tra cứu, lĩnh vực, bản đồ, vừa cập nhật'], ['K02', 'reader/topics.html', 'Chủ đề — Danh mục', 'Lĩnh vực → Chủ đề'], ['K03', 'reader/topics.html?view=map', 'Bản đồ tri thức', 'Đồ thị chủ đề & liên hệ'], ['K04', 'reader/topic.html?id=t_monetary', 'Trang chủ đề', 'Luận điểm, lộ trình đọc, khái niệm, chỉ số'], ['K05', 'reader/report.html?id=r5', 'Tài liệu tri thức', 'Mục lục, thuật ngữ, trích dẫn, phiên bản'], ['K06', 'reader/concept.html?id=c_nim', 'Khái niệm', 'Định nghĩa, công thức, xuất hiện trong'], ['K07', 'reader/glossary.html', 'Từ điển thuật ngữ', 'A–Z, tìm kiếm'], ['K08', 'reader/search.html?q=lãi suất', 'Tra cứu', 'Kết quả nhóm theo loại tri thức'], ['K09', 'reader/bookmarks.html', 'Sổ tay tri thức', 'Tài liệu, đánh dấu, khái niệm, chủ đề']]],
-      ['Dữ liệu, Phản biện & Tài khoản', [['R04', 'reader/report-pdf.html?id=r5', 'Trình xem PDF', 'Tài liệu dài kỳ'], ['R06', 'reader/expert.html?id=e1', 'Hồ sơ chuyên gia', 'Chủ đề phụ trách, tài liệu theo chủ đề'], ['R07', 'reader/market.html', 'Dữ liệu — Chứng khoán', 'VN-Index, VN30, HNX, UPCoM, độ rộng, khối ngoại'], ['R08', 'reader/macro.html', 'Dữ liệu — Vĩ mô', 'Lãi suất, tỷ giá, vàng, dầu, GDP, CPI…'], ['R09', 'reader/indicator.html?id=CPI', 'Chi tiết chỉ số', 'Biểu đồ + tri thức liên quan'], ['R10', 'reader/login.html', 'Đăng nhập', 'Email OTP, Apple, Google, Khách'], ['R12', 'reader/consent.html', 'Đồng ý điều khoản', 'EULA, Privacy, Disclaimer'], ['R13', 'reader/onboarding.html', 'Chọn lĩnh vực quan tâm', ''], ['R15', 'reader/account.html', 'Tôi', 'Hồ sơ, Sổ tay, cài đặt'], ['R17', 'reader/inquiries.html', 'Hộp phản biện', 'Danh sách phiên 1:1'], ['R18', 'reader/inquiry.html?id=q1', 'Phiên phản biện', 'Chat, Report / Block'], ['R20', 'reader/notifications.html', 'Thông báo', ''], ['R21', 'reader/settings.html', 'Cài đặt & Quyền riêng tư', ''], ['R22', 'reader/delete-account.html', 'Xóa tài khoản', 'App Store 5.1.1(v)'], ['R23', 'reader/terms.html', 'Điều khoản (EULA)', 'Kèm Privacy, Disclaimer']]],
-      ['Phase 2 — Thương mại hóa (mô phỏng)', [['P01', 'reader/report.html?id=r5&p2=1', 'Paywall & Teaser', 'Bật “Mô phỏng Phase 2” trên thanh Demo'], ['P02', 'reader/pricing.html', 'Bảng giá hội viên', 'Tháng / Quý / Năm / Mua lẻ'], ['P03', 'reader/checkout.html?plan=yearly', 'Thanh toán web', 'Cổng nội địa (mock)'], ['P04', 'reader/subscription.html', 'Gói của tôi', 'Hủy gia hạn, Khôi phục giao dịch']]],
-      ['CMS Web Portal — Quản trị & Xuất bản', [['C01', 'cms/login.html', 'Đăng nhập CMS', 'Chọn vai trò demo'], ['C02', 'cms/index.html', 'Dashboard', 'Pipeline bài, phản biện, SLA'], ['C03', 'cms/reports.html', 'Danh sách báo cáo', 'Lọc theo trạng thái'], ['C04', 'cms/editor.html?id=r13', 'Soạn thảo báo cáo', 'Upload PDF, gửi thẩm định'], ['C05', 'cms/publish.html?id=r16', 'Panel AI Liên kết', 'Gợi ý Vertex AI, chấp nhận / bỏ / thêm'], ['C06', 'cms/review.html?id=r14', 'Thẩm định học thuật', 'Góp ý theo đoạn, checklist'], ['C07', 'cms/publish.html?id=r16', 'Phê duyệt & Xuất bản', 'Xem trước web/mobile, lên lịch'], ['C09', 'cms/inquiries.html', 'Hàng đợi phản biện', 'SLA, phân công'], ['C10', 'cms/inquiry.html?id=q4', 'Chi tiết phiên (CMS)', 'Trả lời, ghi chú nội bộ'], ['C11', 'cms/moderation.html', 'Kiểm duyệt vi phạm', 'Xử lý Report'], ['C15', 'cms/topics.html', 'Cây chủ đề', 'Tổng quan, luận điểm, liên kết chủ đề'], ['C16', 'cms/glossary.html', 'Thuật ngữ', 'Định nghĩa & mẫu nhận diện'], ['C12', 'cms/experts.html', 'Quản lý chuyên gia', 'Huy hiệu Verified'], ['C13', 'cms/indicators.html', 'Danh mục chỉ số', 'Master data cho AI'], ['C14', 'cms/users.html', 'Người dùng', 'Khóa / mở khóa']]]
+  /* P04 · Buổi trao đổi kín (High-touch) */
+  pages.sessions = () => {
+    const me = F.me(); const s = F.session();
+    const v = F.shell({ side: 'chat', bar: 'back', back: 'reader/inquiries.html', title: '' });
+    const D = 864e5; s.rsvp = s.rsvp || [];
+    const list = [
+      { id: 'ss1', e: 'e1', at: Date.now() + 6 * D, t: 'Chính sách tiền tệ quý IV: kịch bản lãi suất và thanh khoản', seats: 20, taken: 14 },
+      { id: 'ss2', e: 'e2', at: Date.now() + 13 * D, t: 'Ngân hàng số sau sandbox: mô hình kinh doanh nào sẽ trụ lại?', seats: 20, taken: 9 },
+      { id: 'ss3', e: 'e4', at: Date.now() + 20 * D, t: 'Dòng vốn khối ngoại và nâng hạng thị trường', seats: 25, taken: 21 }
     ];
-    const FL = [['F1', 'Khách khám phá → đăng nhập', 'reader/index.html', ['Vai trò: Khách', 'Mở tài liệu → bấm Lưu → Login Wall', 'Email mới → OTP → Đồng ý điều khoản → Chọn lĩnh vực', 'Quay lại tài liệu, bấm Lưu']], ['F2', 'Chủ đề → Tài liệu → Khái niệm', 'reader/topics.html', ['Chủ đề → “Chính sách tiền tệ & Lãi suất”', 'Đọc luận điểm, chọn tài liệu trong Lộ trình đọc', 'Chạm thuật ngữ gạch chân → xem khái niệm']], ['F3', 'Bản đồ tri thức & Chỉ số', 'reader/topics.html?view=map', ['Mở bản đồ, chọn chủ đề', 'Chỉ số theo dõi → chi tiết chỉ số', 'Tri thức liên quan / tài liệu phân tích']], ['F4', 'Quote & Inquire', 'reader/report.html?id=r6', ['Vai trò: Độc giả', 'Bôi đen → “Hỏi tác giả”', 'Đổi vai Chuyên gia → CMS Phản biện → trả lời', 'Đổi vai Độc giả → thông báo → đọc trả lời']], ['F5', 'Đánh dấu & Sổ tay', 'reader/report.html?id=r7', ['Vai trò: Độc giả', 'Bôi đen → “Đánh dấu” + ghi chú', 'Tôi → Sổ tay tri thức → Đánh dấu']], ['F6', 'Xuất bản vào cây tri thức', 'cms/reports.html', ['Chuyên gia: soạn, chọn chủ đề & cấp độ, gửi thẩm định', 'Thẩm định viên: checklist → chuyển duyệt', 'Biên tập: duyệt AI Linking → Xuất bản → xuất hiện trong Chủ đề']], ['F7', 'Báo cáo vi phạm, Chặn, Xóa tài khoản', 'reader/inquiry.html?id=q2', ['Menu ⋯ → Báo cáo vi phạm / Chặn', 'Cài đặt → Xóa tài khoản']], ['F8', 'Paywall (Phase 2)', 'reader/report.html?id=r5&p2=1', ['Bật Mô phỏng Phase 2', 'Tài liệu Premium bị làm mờ → Xem gói → Thanh toán', 'Toàn văn được mở khóa']]];
-    if (F.param('p2')) { F.session().phase2 = true; F.save(); }
-    app().innerHTML = `<header class="topbar"><div class="container">${F.brand('index.html', 'Prototype v2')}<div class="top-actions"><a class="btn btn-secondary btn-sm" href="cms/index.html">CMS Portal</a><a class="btn btn-primary btn-sm" href="reader/index.html">Mở Web Reader ${I('arrowR')}</a></div></div></header>
-      <section class="hub-hero"><div class="container"><span class="badge" style="background:rgba(255,255,255,.12);color:#fff">Prototype HTML/CSS/JS · Dữ liệu minh họa</span><h1 class="mt-12">FBV v2 — Hệ tri thức · Prototype</h1><p>Prototype click-through cho <b>Hệ tri thức</b> (độc giả, mobile-first: Lĩnh vực → Chủ đề → Tài liệu / Khái niệm / Chỉ số) và CMS Web Portal (biên tập, thẩm định, quản trị tri thức). Dùng <b>thanh Demo</b> ở góc phải dưới để đổi vai trò, bật mô phỏng Phase 2 hoặc reset dữ liệu. Mọi thao tác được lưu cục bộ trên trình duyệt của bạn.</p>
-        <div class="row wrap mt-24"><a class="btn btn-primary btn-lg" href="reader/index.html">${I('book')}Mở Hệ tri thức</a><a class="btn btn-lg" style="background:rgba(255,255,255,.12);color:#fff" href="cms/login.html">${I('layers')}Vào CMS Portal</a></div></div></section>
-      <div class="container page"><h2 class="mb-16">Luồng demo chính</h2><div class="hub-grid mb-32">${FL.map((f) => `<div class="flow"><h4><span class="fid">${f[0]}</span>${f[1]}</h4><ol>${f[3].map((x) => `<li>${x}</li>`).join('')}</ol><a class="btn btn-soft btn-sm mt-12" href="${f[2]}">Bắt đầu ${I('arrowR')}</a></div>`).join('')}</div>
-      ${S.map((g) => `<h2 class="mb-16">${g[0]}</h2><div class="hub-grid mb-32">${g[1].map((x) => `<a class="hub-link" href="${x[1]}"><span class="id">${x[0]}</span><span><b>${x[2]}</b><span>${x[3]}</span></span></a>`).join('')}</div>`).join('')}
-      <div class="alert info">${I('info')}<span>Thành phần dùng chung không có trang riêng: hộp giải thích thuật ngữ, modal đánh dấu/ghi chú, gửi phản biện, Login Wall, Report/Block, trạng thái rỗng/lỗi/404 — xuất hiện trong luồng tương ứng.</span></div></div>`;
-    F.demoBar('reader');
-  };
-
-  /* ================= 404 ================= */
-  pages.notfound = () => {
-    document.body.dataset.root = '/';
-    app().innerHTML = `<header class="topbar"><div class="container">${F.brand('/reader/index.html')}</div></header><div class="container page">${F.empty('search', 'Không tìm thấy trang', 'Đường dẫn không tồn tại hoặc đã được thay đổi.', '<a class="btn btn-primary" href="/reader/index.html">Về trang Nghiên cứu</a> <a class="btn btn-secondary" href="/">Danh mục màn hình</a>')}</div>`;
+    const past = [{ e: 'e5', at: Date.now() - 12 * D, t: 'Lạm phát 2026: đọc cấu phần CPI' }, { e: 'e3', at: Date.now() - 40 * D, t: 'Chi phí logistics và biên lợi nhuận doanh nghiệp' }];
+    const prem = F.hasSub();
+    v.innerHTML = `<div class="page" style="padding-bottom:24px">${p2Note()}<div class="auth-hero" style="padding-top:0"><span class="tag prem">${I('crown', 'i-xs')}Đặc quyền Premium</span><h1 class="mt-12">Buổi trao đổi kín cùng chuyên gia</h1><p>Phiên trực tuyến 60 phút, tối đa 20–25 hội viên, không ghi hình công khai. Đặt câu hỏi trước để chuyên gia chuẩn bị.</p></div>
+      ${prem ? '' : `<div class="note accent mb-16">${I('lock')}<span class="grow">Dành cho hội viên Premium. <a class="link" href="${F.url('reader/pricing.html')}">Nâng cấp</a> để đăng ký tham gia.</span></div>`}
+      <div class="group-title">Sắp diễn ra</div><div class="stack">${list.map((x) => { const e = F.expert(x.e); const d = new Date(x.at); const on = s.rsvp.includes(x.id);
+        return `<div class="session-card"><div class="when"><div class="cal"><span>Th${d.getMonth() + 1}</span><b>${d.getDate()}</b></div><div class="grow"><div class="small muted">${d.toLocaleDateString('vi-VN', { weekday: 'long' })} · 20:00 – 21:00 · Trực tuyến</div><h3 class="mt-4">${F.esc(x.t)}</h3></div></div>
+          <div class="row">${F.avatar(e, 'sm')}<span class="small grow"><b>${F.esc(e.name)}</b> ${F.vb(e)}</span><span class="small faint">Còn ${x.seats - x.taken - (on ? 1 : 0)}/${x.seats} chỗ</span></div>
+          ${prem ? `<button class="btn ${on ? 'btn-gray' : 'btn-primary'} btn-block" data-rs="${x.id}">${on ? `${I('check')}Đã đăng ký · Hủy` : 'Đăng ký tham gia'}</button>` : `<a class="btn btn-gray btn-block" href="${F.url('reader/pricing.html')}">${I('lock')}Nâng cấp để đăng ký</a>`}</div>`; }).join('')}</div>
+      <div class="group-title mt-24">Đã diễn ra</div><div class="group">${past.map((x) => { const e = F.expert(x.e); return `<button class="gi" data-past>${F.avatar(e, 'sm')}<span class="gl">${F.esc(x.t)}<small>${F.esc(e.name)} · ${F.date(new Date(x.at).toISOString())}</small></span>${I('chevR', 'chev')}</button>`; }).join('')}</div></div>`;
+    bindP2();
+    $$('[data-rs]').forEach((b) => (b.onclick = () => { if (!me) { F.requireAuth(); return; } const id = b.dataset.rs; const i = s.rsvp.indexOf(id); if (i > -1) { s.rsvp.splice(i, 1); F.toast('Đã hủy đăng ký', 'info'); } else { s.rsvp.push(id); F.toast('Đã đăng ký. Liên kết tham gia sẽ gửi qua thông báo trước 1 giờ.'); } F.save(); pages.sessions(); }));
+    $$('[data-past]').forEach((b) => (b.onclick = () => F.modal({ title: 'Tóm tắt buổi trao đổi', body: `<p class="muted">${prem ? 'Biên bản tóm tắt nội dung chính, câu hỏi của hội viên và tài liệu tham khảo do chuyên gia chia sẻ (mô phỏng).' : 'Tóm tắt các buổi đã diễn ra dành cho hội viên Premium.'}</p>`, actions: [{ label: 'Đóng', cls: 'btn-primary' }] })));
   };
 })();

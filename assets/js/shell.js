@@ -1,145 +1,134 @@
 /* =========================================================
-   FBV v2 — READER APP SHELL (mobile-first)
-   Appbar + Tab bar (mobile) · Rail (tablet) · Sidebar (desktop)
-   Ghi đè FBV.readerShell của core.js cho các trang Reader.
+   FBV v3 Prototype — APP SHELL (Reader)
+   Appbar · Tab bar 5 mục · Sidebar desktop · Component dùng chung
    ========================================================= */
 (function () {
   const F = window.FBV; const I = F.icon;
-  const $ = (s, r = document) => r.querySelector(s);
+  const $ = (s, r = document) => r.querySelector(s); const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  F.$ = $; F.$$ = $$;
 
-  /* Cấu hình từng trang: tab đang chọn, tiêu đề, nút quay lại, dock */
-  const META = {
-    home: { tab: 'explore', root: true, title: 'Khám phá', brand: true },
-    topics: { tab: 'topics', root: true, title: 'Chủ đề' },
-    market: { tab: 'data', root: true, title: 'Dữ liệu', rail: 'market' },
-    macro: { tab: 'data', root: true, title: 'Dữ liệu', rail: 'macro' },
-    inquiries: { tab: 'inquiries', root: true, title: 'Phản biện' },
-    account: { tab: 'me', root: true, title: 'Tôi' },
-    topic: { tab: 'topics', title: 'Chủ đề', back: 'reader/topics.html' },
-    concept: { tab: 'topics', title: 'Khái niệm', back: 'reader/glossary.html', rail: 'glossary' },
-    glossary: { tab: 'topics', title: 'Từ điển thuật ngữ', back: 'reader/topics.html', rail: 'glossary' },
-    search: { tab: 'explore', title: 'Tra cứu', back: 'reader/index.html', noSearch: true },
-    report: { tab: 'topics', title: '', back: 'reader/topics.html', dock: 'report' },
-    reportPdf: { tab: 'topics', title: 'Bản PDF', back: 'reader/index.html', noTab: true },
-    expert: { tab: 'explore', title: 'Chuyên gia', back: 'reader/index.html' },
-    indicator: { tab: 'data', title: 'Chỉ số', back: 'reader/market.html', rail: 'market' },
-    inquiry: { tab: 'inquiries', title: 'Phiên phản biện', back: 'reader/inquiries.html', dock: 'chat' },
-    notifications: { tab: 'me', title: 'Thông báo', back: 'reader/account.html', rail: 'notifications' },
-    bookmarks: { tab: 'me', title: 'Sổ tay tri thức', back: 'reader/account.html', rail: 'bookmarks' },
-    settings: { tab: 'me', title: 'Cài đặt & Quyền riêng tư', back: 'reader/account.html' },
-    deleteAccount: { tab: 'me', title: 'Xóa tài khoản', back: 'reader/settings.html', noTab: true },
-    terms: { tab: 'me', title: 'Điều khoản sử dụng', back: 'reader/account.html' },
-    privacy: { tab: 'me', title: 'Chính sách bảo mật', back: 'reader/account.html' },
-    disclaimer: { tab: 'me', title: 'Miễn trừ trách nhiệm', back: 'reader/account.html' },
-    pricing: { tab: 'me', title: 'FBV Premium', back: 'reader/index.html', dock: 'cta' },
-    checkout: { tab: 'me', title: 'Thanh toán', back: 'reader/pricing.html', dock: 'cta' },
-    subscription: { tab: 'me', title: 'Gói của tôi', back: 'reader/account.html' },
-    login: { auth: true, title: '', back: 'reader/index.html' },
-    otp: { auth: true, title: 'Xác thực', back: 'reader/login.html' },
-    consent: { auth: true, title: 'Điều khoản', back: null, dock: 'cta' },
-    onboarding: { auth: true, title: 'Cá nhân hóa', back: null, dock: 'cta' }
-  };
-  F.PAGE_META = META;
+  const TABS = [
+    ['home', 'reader/index.html', 'Trang chủ', 'home'],
+    ['library', 'reader/bookmarks.html', 'Thư viện', 'read'],
+    ['market', 'reader/market.html', 'Thị trường', 'market'],
+    ['chat', 'reader/inquiries.html', 'Phản biện', 'chat'],
+    ['activity', 'reader/notifications.html', 'Hoạt động', 'bell']
+  ];
 
   F.back = (fallback) => {
-    try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { history.back(); return; } } catch (e) {}
-    F.go(fallback || 'reader/index.html');
+    const ref = document.referrer; const same = ref && ref.indexOf(location.host) > -1 && ref !== location.href;
+    if (same && history.length > 1) history.back(); else F.go(fallback || 'reader/index.html');
   };
 
-  F.readerShell = (active, opts = {}) => {
-    const page = document.body.dataset.page;
-    const m = Object.assign({ tab: 'explore' }, META[page] || {}, opts);
-    const me = F.me(); const db = F.db(); const b = document.body;
-    const unread = me ? db.notifications.filter((n) => n.user === me.id && !n.read).length : 0;
-    const inqUnread = me ? db.inquiries.filter((q) => q.reader === me.id && q.readerUnread).length : 0;
-    b.classList.add('rd');
-    if (m.auth) b.classList.add('auth-mode', 'no-rail');
-    if (m.dock === 'report') b.classList.add('has-dock', 'report-mode');
-    else if (m.dock === 'chat') b.classList.add('has-dock');
-    else if (m.dock === 'cta') b.classList.add('has-cta');
-    else if (!m.noTab && !m.auth) b.classList.add('has-tabbar');
+  const counts = () => {
+    const me = F.me(); const db = F.db();
+    return {
+      chat: me ? db.inquiries.filter((q) => q.reader === me.id && q.readerUnread).length : 0,
+      activity: me ? db.notifications.filter((n) => n.user === me.id && !n.read).length : 0
+    };
+  };
 
-    /* ----- Rail / sidebar (≥768) ----- */
-    const railActive = m.rail || (m.tab === 'data' ? 'market' : m.tab);
-    const ri = (key, href, label, icon, badge) => `<a class="r-item ${railActive === key ? 'active' : ''}" href="${F.url(href)}" title="${label}">${I(icon)}<span>${label}</span>${badge ? `<span class="r-badge">${badge}</span>` : ''}</a>`;
-    const rail = document.createElement('aside'); rail.className = 'rail'; rail.setAttribute('aria-label', 'Điều hướng');
-    rail.innerHTML = `<a class="r-brand" href="${F.url('reader/index.html')}">${F.brandMark()}<span>FBV<small>Hệ tri thức</small></span></a>
-      ${ri('explore', 'reader/index.html', 'Khám phá', 'home')}${ri('topics', 'reader/topics.html', 'Chủ đề', 'layers')}${ri('glossary', 'reader/glossary.html', 'Từ điển', 'book')}${ri('market', 'reader/market.html', 'Dữ liệu', 'chart')}${ri('inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread)}
-      <div class="r-sep"></div>${me ? ri('bookmarks', 'reader/bookmarks.html', 'Sổ tay', 'bookmark') + ri('notifications', 'reader/notifications.html', 'Thông báo', 'bell', unread) : ''}${ri('me', 'reader/account.html', me ? 'Tôi' : 'Tài khoản', 'user')}
-      <div class="r-foot">${F.session().phase2 && !F.hasSub() ? `<a class="btn btn-soft btn-sm" href="${F.url('reader/pricing.html')}" title="FBV Premium">${I('crown')}<span class="r-label">Nâng cấp Premium</span></a>` : ''}
-      ${me ? '' : `<a class="btn btn-primary btn-sm" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}" title="Đăng nhập">${I('user')}<span class="r-label">Đăng nhập</span></a>`}</div>`;
+  /* opts: tab, bar ('root'|'back'|'close'|'none'), title, back, right, left, notab, aside, rootTitle */
+  F.shell = (opts = {}) => {
+    const me = F.me(); const cnt = counts(); const s = F.session();
+    document.body.classList.add('rd');
+    if (opts.notab) document.body.classList.add('no-tab');
+    const sideItems = [
+      ['home', 'reader/index.html', 'Trang chủ', 'home'],
+      ['search', 'reader/search.html', 'Tìm kiếm', 'search'],
+      ['library', 'reader/bookmarks.html', 'Thư viện', 'read'],
+      ['market', 'reader/market.html', 'Thị trường', 'market'],
+      ['macro', 'reader/macro.html', 'Vĩ mô & Tiền tệ', 'globe'],
+      ['chat', 'reader/inquiries.html', 'Phản biện 1:1', 'chat'],
+      ['activity', 'reader/notifications.html', 'Hoạt động', 'bell'],
+      ['me', me ? 'reader/account.html' : 'reader/login.html', 'Hồ sơ', 'user']
+    ];
+    const act = opts.side || opts.tab;
+    const side = `<nav class="side" aria-label="Điều hướng chính">${F.brand(F.url('reader/index.html'))}
+      ${sideItems.map((n) => `<a class="sn ${act === n[0] ? 'on' : ''}" href="${F.url(n[1])}" title="${n[2]}">${I(n[3])}<span>${n[2]}</span>${cnt[n[0]] ? `<span class="dot-badge">${cnt[n[0]]}</span>` : ''}</a>`).join('')}
+      <div class="sp"></div>
+      ${!me ? `<a class="btn btn-primary cta" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập</a>` : s.phase2 && !F.hasSub() ? `<a class="btn btn-primary cta" href="${F.url('reader/pricing.html')}">${I('crown')}Nâng cấp Premium</a>` : ''}
+      ${me ? `<a class="side-me" href="${F.url('reader/settings.html')}" title="Cài đặt">${F.avatar(me, 'sm')}<span class="t"><b>${F.esc(me.name)}</b><span>Cài đặt</span></span></a>` : ''}</nav>`;
 
-    /* ----- App bar ----- */
-    const bar = document.createElement('header'); bar.className = 'appbar';
-    const backBtn = m.back !== undefined && !m.root ? (m.back === null ? '' : `<button class="icon-btn ab-back" id="abBack" aria-label="Quay lại">${I('arrowL')}</button>`) : '';
-    const left = m.root
-      ? (m.brand ? `<a class="ab-brand m-only" href="${F.url('reader/index.html')}">${F.brandMark()}FBV</a><span class="ab-title big d-only">${m.title}</span>` : `<span class="ab-title big">${m.title}</span>`)
-      : `${backBtn}<span class="ab-title" id="abTitle">${F.esc(m.title || '')}</span>`;
-    const search = m.root ? `<div class="ab-search search-box">${I('search')}<input class="input" id="abSearch" type="search" placeholder="Tra cứu chủ đề, khái niệm, chỉ số, tài liệu…" aria-label="Tìm kiếm"></div>` : '';
-    bar.innerHTML = `${left}${m.root && m.brand ? '<span class="ab-spacer m-only"></span>' : ''}${search}${m.root ? '<span class="ab-spacer d-only"></span>' : ''}
-      <div class="ab-actions" id="abActions"></div>
-      <div class="ab-actions">${m.root && !m.noSearch && !m.auth ? `<a class="icon-btn ${m.root ? 'lt-desk' : ''}" href="${F.url('reader/search.html')}" aria-label="Tìm kiếm">${I('search')}</a>` : ''}
-      ${m.auth ? '' : me ? `<div class="rel ${m.root ? '' : 'd-only'}"><button class="icon-btn" id="bellBtn" aria-label="Thông báo">${I('bell')}${unread ? `<span class="dot-badge">${unread}</span>` : ''}</button></div><div class="rel d-only"><button class="avatar-btn" id="meBtn" aria-label="Tài khoản">${F.avatar(me)}</button></div>`
-        : `<a class="btn btn-primary btn-sm login-btn ${m.root ? '' : 'd-only'}" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập</a>`}</div>`;
+    let bar = '';
+    const bt = opts.bar || 'root';
+    if (bt === 'root') {
+      bar = `<header class="appbar" id="ab"><div class="ab-l">${F.brand(F.url('reader/index.html'))}<span class="ab-t left d-only">${F.esc(opts.rootTitle || opts.title || '')}</span></div><div class="ab-t"></div><div class="ab-r">${opts.right || ''}<a class="icon-btn hide-d" href="${F.url('reader/search.html')}" aria-label="Tìm kiếm">${I('search')}</a>${me ? `<a class="av-btn hide-d" href="${F.url('reader/account.html')}" aria-label="Hồ sơ của bạn">${F.avatar(me, 'sm')}</a>` : `<a class="txt-btn acc hide-d" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập</a>`}</div></header>`;
+    } else if (bt !== 'none') {
+      const left = opts.left != null ? opts.left : bt === 'close' ? `<button class="icon-btn" id="abBack" aria-label="Đóng">${I('x')}</button>` : `<button class="icon-btn" id="abBack" aria-label="Quay lại">${I('chevL')}</button>`;
+      bar = `<header class="appbar" id="ab"><div class="ab-l">${left}</div><div class="ab-t" id="abTitle">${opts.title ? F.esc(opts.title) : ''}</div><div class="ab-r" id="abRight">${opts.right || ''}</div></header>`;
+    }
 
-    /* ----- Tab bar (mobile) ----- */
-    const tb = document.createElement('nav'); tb.className = 'tabbar'; tb.setAttribute('aria-label', 'Điều hướng chính');
-    const tabs = [['explore', 'reader/index.html', 'Khám phá', 'home'], ['topics', 'reader/topics.html', 'Chủ đề', 'layers'], ['data', 'reader/market.html', 'Dữ liệu', 'chart'], ['inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread], ['me', 'reader/account.html', 'Tôi', 'user', unread]];
-    tb.innerHTML = tabs.map((t) => `<a href="${F.url(t[1])}" class="${m.tab === t[0] ? 'active' : ''}" ${m.tab === t[0] ? 'aria-current="page"' : ''}>${I(t[3])}<span>${t[2]}</span>${t[4] ? `<span class="t-badge">${t[4]}</span>` : ''}</a>`).join('');
+    const tabbar = `<nav class="tabbar" aria-label="Thanh điều hướng">${TABS.map((t) => `<a href="${F.url(t[1])}" class="${opts.tab === t[0] ? 'on' : ''}">${I(t[3])}<span>${t[2]}</span>${cnt[t[0]] ? `<span class="dot-badge">${cnt[t[0]]}</span>` : ''}</a>`).join('')}</nav>`;
 
-    /* ----- Footer (≥768) ----- */
-    const f = document.createElement('footer'); f.className = 'footer';
-    f.innerHTML = `<div class="container"><div class="row wrap between" style="align-items:flex-start;gap:16px"><p class="fd small muted" style="max-width:620px;line-height:1.6">Nội dung trên FBV mang tính nghiên cứu, học thuật, không phải khuyến nghị đầu tư. Dữ liệu thị trường trễ tối thiểu 15 phút. <b>Toàn bộ số liệu trong prototype là minh họa.</b></p>
-      <nav class="row wrap small" style="gap:14px"><a href="${F.url('reader/terms.html')}">Điều khoản (EULA)</a><a href="${F.url('reader/privacy.html')}">Bảo mật</a><a href="${F.url('reader/disclaimer.html')}">Miễn trừ trách nhiệm</a><a href="${F.url('reader/pricing.html')}">Gói hội viên</a><a href="${F.url('cms/index.html')}">CMS</a></nav></div></div>`;
-
-    /* ----- Assemble ----- */
-    const main = document.getElementById('app');
-    const col = document.createElement('div'); col.className = 'app-col';
-    main.parentNode.insertBefore(col, main);
-    col.appendChild(bar); col.appendChild(main); if (!m.auth) col.appendChild(f);
-    if (!m.auth) document.body.insertBefore(rail, col);
-    if (b.classList.contains('has-tabbar')) document.body.appendChild(tb);
-
-    /* ----- Behaviours ----- */
-    const bk = $('#abBack'); if (bk) bk.onclick = () => F.back(m.back);
-    const s = $('#abSearch'); if (s) s.addEventListener('keydown', (e) => { if (e.key === 'Enter') F.go('reader/search.html?q=' + encodeURIComponent(s.value.trim())); });
-    const bell = $('#bellBtn');
-    if (bell) bell.addEventListener('click', (e) => { e.stopPropagation(); if (innerWidth < 768) { F.go('reader/notifications.html'); return; } F.dropdown(bell, F.notiDropdown()); });
-    const meBtn = $('#meBtn');
-    if (meBtn) meBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      F.dropdown(meBtn, `<div class="dd-head"><b>${F.esc(me.name)}</b><div class="xs muted">${F.esc(me.email)}</div>${F.hasSub() ? `<span class="badge premium mt-8">Premium</span>` : ''}</div><hr>
-        <a href="${F.url('reader/account.html')}">${I('user')}Trang cá nhân</a><a href="${F.url('reader/bookmarks.html')}">${I('bookmark')}Sổ tay tri thức</a><a href="${F.url('reader/inquiries.html')}">${I('message')}Phản biện của tôi</a>${F.session().phase2 ? `<a href="${F.url('reader/subscription.html')}">${I('crown')}Gói của tôi</a>` : ''}<a href="${F.url('reader/settings.html')}">${I('settings')}Cài đặt & Quyền riêng tư</a><hr><button id="ddLogout">${I('logout')}Đăng xuất</button>`);
-      $('#ddLogout').addEventListener('click', () => { F.logout(); sessionStorage.setItem('fbv-flash', 'Đã đăng xuất'); F.go('reader/index.html'); });
-    });
+    const app = document.getElementById('app'); app.className = 'app';
+    app.innerHTML = side + `<div class="main"><div class="${opts.aside ? 'wrap2' : ''}"><div class="col">${bar}<div id="view"></div></div>${opts.aside ? `<aside class="aside" id="aside">${opts.aside}</aside>` : ''}</div></div>` + tabbar;
+    const back = $('#abBack'); if (back) back.onclick = () => (opts.onBack ? opts.onBack() : F.back(opts.back));
+    const ab = $('#ab'); if (ab) { const on = () => ab.classList.toggle('scrolled', window.scrollY > 4); window.addEventListener('scroll', on, { passive: true }); on(); }
+    if (opts.title) document.title = opts.title.replace(/<[^>]+>/g, '') + ' · FBV';
     F.demoBar('reader');
+    return $('#view');
   };
-
   F.setTitle = (t) => { const el = $('#abTitle'); if (el) el.textContent = t; };
-  F.setActions = (html) => { const el = $('#abActions'); if (el) el.innerHTML = html; return el; };
-  F.readProgress = () => {
-    const bar = document.createElement('div'); bar.className = 'readbar'; document.body.appendChild(bar);
-    const upd = () => { const h = document.documentElement; const max = h.scrollHeight - innerHeight; bar.style.width = (max > 0 ? Math.min(100, (scrollY / max) * 100) : 0) + '%'; };
-    addEventListener('scroll', upd, { passive: true }); upd();
-  };
+  F.setRight = (h) => { const el = $('#abRight'); if (el) el.innerHTML = h; return el; };
 
-  /* ---------- Reader components (mobile-first) ---------- */
-  const sm = (svg, s = 14) => svg.replace('<svg', `<svg style="width:${s}px;height:${s}px;flex:none"`);
-  F.reportRow = (r, opts = {}) => {
+  /* ---------------- Guest gate ---------------- */
+  F.gate = (icon, title, text) => F.empty(icon, title, text, `<a class="btn btn-primary" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}">Đăng nhập / Đăng ký</a>`);
+
+  /* ---------------- Follow / bookmark / share (delegated) ---------------- */
+  F.isFollow = (eid) => { const me = F.me(); return !!me && me.follows.includes(eid); };
+  F.isSaved = (rid) => { const me = F.me(); return !!me && me.bookmarks.includes(rid); };
+  F.followBtn = (e, cls = 'btn btn-sm') => { const on = F.isFollow(e.id); return `<button class="${cls} ${on ? 'btn-gray' : 'btn-primary'}" data-follow="${e.id}">${on ? 'Đang theo dõi' : 'Theo dõi'}</button>`; };
+  F.toggleFollow = (eid) => {
+    if (!F.requireAuth('Đăng nhập để theo dõi chuyên gia và nhận thông báo khi có báo cáo mới.')) return null;
+    const me = F.me(); const i = me.follows.indexOf(eid); if (i > -1) me.follows.splice(i, 1); else me.follows.push(eid); F.save();
+    const on = i < 0; F.toast(on ? 'Đã theo dõi ' + F.expert(eid).name : 'Đã bỏ theo dõi', on ? 'success' : 'info'); return on;
+  };
+  F.toggleSave = (rid) => {
+    if (!F.requireAuth('Đăng nhập để lưu báo cáo và đọc lại trên mọi thiết bị.')) return null;
+    const me = F.me(); const i = me.bookmarks.indexOf(rid); if (i > -1) me.bookmarks.splice(i, 1); else me.bookmarks.unshift(rid); F.save();
+    const on = i < 0; F.toast(on ? 'Đã lưu vào Thư viện' : 'Đã bỏ lưu', on ? 'success' : 'info'); return on;
+  };
+  F.shareSheet = (title, url) => F.modal({
+    title: 'Chia sẻ báo cáo',
+    body: `<div class="stack"><p class="muted small clamp2">${F.esc(title)}</p><div class="row"><input class="input grow" id="shu" value="${F.esc(url)}" readonly aria-label="Liên kết"><button class="btn btn-primary" id="cpy">${I('copy')}Sao chép</button></div>
+      <div class="chips">${['Facebook', 'LinkedIn', 'Zalo', 'Email', 'Tin nhắn'].map((n) => `<button class="chip" data-n="${n}">${n}</button>`).join('')}</div>
+      <p class="hint">Liên kết mở trang web báo cáo (có ảnh xem trước). Trên điện thoại đã cài app, liên kết mở thẳng trong ứng dụng FBV.</p></div>`,
+    onOpen: (el) => { $('#cpy', el).onclick = () => { try { navigator.clipboard.writeText(url); } catch (e) {} F.toast('Đã sao chép liên kết'); }; $$('[data-n]', el).forEach((b) => (b.onclick = () => F.toast('Mô phỏng: chia sẻ qua ' + b.dataset.n, 'info'))); }
+  });
+  document.addEventListener('click', (e) => {
+    const f = e.target.closest('[data-follow]');
+    if (f) { e.preventDefault(); e.stopPropagation(); const on = F.toggleFollow(f.dataset.follow); if (on === null) return; $$(`[data-follow="${f.dataset.follow}"]`).forEach((b) => { if (b.classList.contains('follow')) { b.textContent = on ? 'Đang theo dõi' : 'Theo dõi'; b.classList.toggle('on', on); } else { b.textContent = on ? 'Đang theo dõi' : 'Theo dõi'; b.classList.toggle('btn-primary', !on); b.classList.toggle('btn-gray', on); } }); return; }
+    const b = e.target.closest('[data-bm]');
+    if (b) { e.preventDefault(); e.stopPropagation(); const on = F.toggleSave(b.dataset.bm); if (on === null) return; $$(`[data-bm="${b.dataset.bm}"]`).forEach((x) => { x.classList.toggle('on', on); const sv = x.querySelector('svg'); if (sv) sv.outerHTML = I(on ? 'bookmarkFill' : 'bookmark'); x.setAttribute('aria-label', on ? 'Bỏ lưu' : 'Lưu'); }); return; }
+    const sh = e.target.closest('[data-share]');
+    if (sh) { e.preventDefault(); e.stopPropagation(); const r = F.report(sh.dataset.share); F.shareSheet(r.title, location.origin + location.pathname.replace(/[^/]*$/, '') + (F.root() ? '' : 'reader/') + 'report.html?id=' + r.id); }
+  });
+
+  /* ---------------- Cards ---------------- */
+  F.post = (r, opts = {}) => {
+    const e = F.expert(r.author); const saved = F.isSaved(r.id); const fol = F.isFollow(e.id); const q = F.inqCount(r.id);
+    return `<article class="post">
+      <a class="post-link" href="${F.url('reader/report.html?id=' + r.id)}" aria-label="${F.esc(r.title)}"></a>
+      <div class="post-h"><a href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'md')}</a><div class="who"><a class="nm" href="${F.url('reader/expert.html?id=' + e.id)}"><span class="t">${F.esc(e.name)}</span>${F.vb(e)}</a><div class="mt"><span>${F.short(r.publishedAt)}</span><span>·</span><span class="stream">${F.STREAM_S[r.stream]}</span>${opts.nofollow ? '' : `<span>·</span><button class="follow ${fol ? 'on' : ''}" data-follow="${e.id}">${fol ? 'Đang theo dõi' : 'Theo dõi'}</button>`}</div></div></div>
+      <h3 class="post-t">${F.esc(r.title)}</h3>
+      <p class="post-d clamp3">${F.esc(r.dek)}</p>
+      ${opts.nocover ? '' : `<div class="post-cv">${F.cover(r)}<div class="ov">${r.premium && F.session().phase2 ? `<span class="tag prem">${I('crown', 'i-xs')}Premium</span>` : ''}${r.pdf ? `<span class="tag">${I('pdf', 'i-xs')}PDF</span>` : ''}<span class="tag">${r.readTime} phút đọc</span></div></div>`}
+      <div class="post-a"><span title="Lượt đọc">${I('eye')}${F.compact(r.views || 0)}</span><a href="${F.url('reader/report.html?id=' + r.id + '#phan-bien')}" title="Phản biện">${I('chat')}${q}</a><span class="sp"></span><button class="${saved ? 'on' : ''}" data-bm="${r.id}" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div>
+    </article>`;
+  };
+  F.postCompact = (r, opts = {}) => {
     const e = F.expert(r.author);
-    return `<a class="rrow" href="${F.url('reader/report.html?id=' + r.id)}"><div style="min-width:0"><div class="rr-top">${F.streamBadge(r.stream)}${r.premium ? F.premiumBadge() : ''}${r.pdf ? `<span class="badge">${sm(I('file'), 12)}PDF</span>` : ''}</div>
-      <h3>${F.esc(r.title)}</h3>${opts.dek === false ? '' : `<p class="rr-dek">${F.esc(r.dek)}</p>`}
-      <div class="rr-meta"><b>${F.esc(e.short)}</b>${e.verified ? sm(F.verifiedIcon()) : ''}<span>·</span><span>${F.ago(r.publishedAt)}</span><span>·</span><span>${r.readTime} phút</span></div></div>
-      <div class="thumb">${F.cover(r)}</div></a>`;
+    return `<a class="post compact" href="${F.url('reader/report.html?id=' + r.id)}"><div class="pc-body"><div class="pc-top">${F.avatar(e, 'xs')}<span class="ellipsis">${F.esc(e.name)}</span>${F.vb(e)}</div><h3 class="post-t clamp3">${F.esc(r.title)}</h3><div class="pc-meta"><span class="stream">${F.STREAM_S[r.stream]}</span><span>·</span><span>${opts.date === 'ago' ? F.ago(r.publishedAt) : F.short(r.publishedAt)}</span><span>·</span><span>${r.readTime} phút</span>${r.premium && F.session().phase2 ? `<span class="tag prem">${I('crown', 'i-xs')}Premium</span>` : ''}${r.pdf ? `<span class="tag">PDF</span>` : ''}${opts.extra || ''}</div></div><div class="pc-cv">${F.cover(r)}</div></a>`;
   };
-  F.heroCard = (r, dark) => {
-    const e = F.expert(r.author);
-    return `<a class="hero ${dark ? 'dark' : ''}" href="${F.url('reader/report.html?id=' + r.id)}"><div class="cover">${F.cover(r)}</div><div class="hb"><div class="row wrap" style="gap:6px">${F.streamBadge(r.stream)}${r.premium ? F.premiumBadge() : ''}</div><h3>${F.esc(r.title)}</h3><div class="rr-meta">${F.avatar(e, 'sm')}<b>${F.esc(e.short)}</b>${e.verified ? sm(F.verifiedIcon()) : ''}<span>· ${F.ago(r.publishedAt)}</span></div></div></a>`;
-  };
-  F.idxChip = (ind) => {
-    const c = F.chg(ind); const macro = ind.group === 'macro';
-    return `<a class="idx-chip" href="${F.url('reader/indicator.html?id=' + ind.id)}"><span class="n">${F.esc(ind.name.replace(' (NHTM bán ra)', '').replace('Vàng thế giới ', 'Vàng ').replace('LS liên ngân hàng qua đêm', 'LS qua đêm'))}</span><span class="v num">${F.fmtVal(ind)}</span><span class="c num ${c.d}">${F.arrow(c.c)} ${macro ? F.signed(c.c, ind.dec) + ' đ.%' : F.signed(c.p, 2) + '%'}</span>${macro ? '' : `<span class="sp">${F.chart.spark(F.series(ind, '1D').values, c.d)}</span>`}</a>`;
-  };
-  F.secHead = (title, href, link = 'Xem tất cả') => `<div class="sec-head"><h2>${title}</h2>${href ? `<a href="${F.url(href)}">${link}</a>` : ''}</div>`;
-  F.expMini = (e) => `<a class="exp-mini" href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'md')}<span class="nm">${F.esc(e.name)} ${e.verified ? sm(F.verifiedIcon(), 13) : ''}</span><span class="tt">${F.esc(e.title)}</span></a>`;
+  F.mcard = (ind) => { const ch = F.chg(ind); return `<a class="mcard" href="${F.url('reader/indicator.html?id=' + ind.id)}"><span class="n ellipsis">${F.esc(shortName(ind))}</span><span class="v num">${F.fmtVal(ind)}</span><span class="c num ${ch.d}">${F.arrow(ch.c)} ${F.chgText(ind)}</span><span class="sp">${F.sparkOf(ind)}</span></a>`; };
+  const shortName = (ind) => ind.name.replace(' (NHTM bán ra)', '').replace('Vàng thế giới (XAU/USD)', 'Vàng (XAU/USD)').replace('LS liên ngân hàng qua đêm', 'LS qua đêm').replace('Chỉ số ', '');
+  F.shortName = shortName;
+  F.irow = (ind, opts = {}) => { const ch = F.chg(ind); const macro = ind.group === 'macro'; return `<a class="irow ${opts.nosp ? 'nosp' : ''}" href="${F.url('reader/indicator.html?id=' + ind.id)}"><span class="n">${F.esc(opts.short ? shortName(ind) : ind.name)}<small>${macro ? F.esc(ind.period) : F.esc(ind.freq)}</small></span>${opts.nosp ? '' : `<span class="sp">${F.sparkOf(ind)}</span>`}<span class="v num">${F.fmtVal(ind)}<small class="${ch.d}">${F.arrow(ch.c)} ${F.chgText(ind)}</small></span></a>`; };
+  F.erow = (e, opts = {}) => `<a class="erow" href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'md')}<div class="t"><b><span class="ellipsis">${F.esc(e.name)}</span>${F.vb(e)}</b><small class="ellipsis">${F.esc(e.title)}</small>${opts.bio ? `<p class="clamp2">${F.esc(e.bio)}</p>` : ''}</div>${opts.nobtn ? '' : F.followBtn(e, 'btn btn-xs')}</a>`;
+  F.ecard = (e) => `<a class="ecard" href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'lg')}<b>${F.esc(e.name)} ${F.vb(e)}</b><small class="clamp2">${F.esc(e.title)}</small>${F.followBtn(e, 'btn btn-xs')}</a>`;
+
+  /* ---------------- Disclaimer ---------------- */
+  F.disclaimer = () => `<div class="disclaimer">${I('info')}<span><b>Tuyên bố miễn trừ trách nhiệm:</b> Nội dung mang tính nghiên cứu, học thuật và thông tin, không phải khuyến nghị mua, bán hay nắm giữ bất kỳ tài sản tài chính nào. Quan điểm thuộc về tác giả tại thời điểm công bố. Dữ liệu thị trường có độ trễ tối thiểu 15 phút. <a class="link" href="${F.url('reader/disclaimer.html')}">Xem đầy đủ</a></span></div>`;
+  F.footLinks = () => `<div class="foot-links"><a href="${F.url('reader/terms.html')}">Điều khoản (EULA)</a><a href="${F.url('reader/privacy.html')}">Bảo mật</a><a href="${F.url('reader/disclaimer.html')}">Miễn trừ trách nhiệm</a><a href="${F.url('cms/index.html')}">CMS</a><span>© 2026 FBV · Prototype</span></div>`;
 })();

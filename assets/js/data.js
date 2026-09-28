@@ -369,7 +369,7 @@
     { id: 'n2', user: 'u1', type: 'report', ref: 'r7', text: 'Báo cáo mới trong Kinh tế Vĩ mô: "Lạm phát 2026: cấu phần giá và rủi ro từ giá năng lượng".', at: ago(20 * H), read: false },
     { id: 'n3', user: 'u1', type: 'answer', ref: 'q2', text: 'TS. Trần Quốc Bảo đã phản hồi trong phiên phản biện về "Áp lực tỷ giá USD/VND".', at: ago(32 * D), read: true },
     { id: 'n4', user: 'u1', type: 'follow', ref: 'r5', text: 'Chuyên gia bạn theo dõi (TS. Trần Quốc Bảo) vừa xuất bản báo cáo mới.', at: ago(1 * D + 5 * H), read: true },
-    { id: 'n5', user: 'u1', type: 'system', ref: null, text: 'Chào mừng bạn đến với FBV — Hệ tri thức tài chính được thẩm định bởi chuyên gia.', at: ago(62 * D), read: true }
+    { id: 'n5', user: 'u1', type: 'system', ref: null, text: 'Chào mừng bạn đến với FBV — nền tảng nghiên cứu kinh tế – tài chính được thẩm định bởi chuyên gia.', at: ago(62 * D), read: true }
   ];
 
   const reviews = [

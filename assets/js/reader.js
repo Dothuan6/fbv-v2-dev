@@ -1,196 +1,282 @@
 /* =========================================================
-   FBV v2 Prototype — READER (phần 1)
-   R01 Feed · R02 Tìm kiếm · R03 Báo cáo · R04 PDF · R05 Phản biện (modal)
-   R06 Chuyên gia · R07 Thị trường · R08 Vĩ mô · R09 Chi tiết chỉ số
-   Giao diện mobile-first (app shell trong shell.js)
+   FBV v3 Prototype — READER
+   R01 Research Feed · R02 Tìm kiếm & lọc · R03 Trình đọc báo cáo (+ Paywall P2)
+   R04 PDF Viewer · R05 Gửi phản biện (sheet) · R06 Hồ sơ chuyên gia · R07 Thư viện
    ========================================================= */
 (function () {
   const F = window.FBV; const pages = (F.pages = F.pages || {});
-  const $ = (s, r = document) => r.querySelector(s); const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const app = () => document.getElementById('app');
-  const I = F.icon;
+  const $ = F.$, $$ = F.$$; const I = F.icon;
 
-  /* ---------- Shared: blocks renderer ---------- */
+  /* ---------- Blocks renderer (dùng chung Reader + CMS preview) ---------- */
   F.renderBlocks = (r, opts = {}) => {
     const links = opts.widgets === false ? [] : F.linksOfReport(r.id);
     const blocks = r.body.slice(opts.from || 0, opts.to == null ? r.body.length : opts.to);
-    const used = new Set(); const tx = (x) => (opts.terms && F.linkTerms ? F.linkTerms(F.esc(x), used) : F.esc(x));
     return blocks.map((b, k) => {
       const i = k + (opts.from || 0); let h = '';
-      if (b.t === 'p') h = `<p data-b="${i}" id="p${i}">${tx(b.x)}</p>`;
-      else if (b.t === 'h') h = `<h2 data-b="${i}" id="h${i}">${F.esc(b.x)}</h2>`;
+      if (b.t === 'p') h = `<p data-b="${i}" id="p${i}">${F.esc(b.x)}</p>`;
+      else if (b.t === 'h') h = `<h2 data-b="${i}">${F.esc(b.x)}</h2>`;
       else if (b.t === 'quote') h = `<blockquote data-b="${i}">${F.esc(b.x)}</blockquote>`;
-      else if (b.t === 'table') h = `<div class="tbl-wrap" data-b="${i}"><div class="fig-title" style="font-family:var(--font-ui);font-size:14.5px;font-weight:700;margin-bottom:8px">${F.esc(b.cap)}</div><table><thead><tr>${b.head.map((x, j) => `<th class="${j ? 'r' : ''}">${F.esc(x)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((row) => `<tr>${row.map((x, j) => `<td class="${j ? 'r' : ''}">${F.esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table><figcaption style="font-family:var(--font-ui);font-size:13px;color:var(--text-3);margin-top:8px">Nguồn: ${F.esc(b.src)}</figcaption></div>`;
-      else if (b.t === 'fig') h = `<figure data-b="${i}"><div class="fig-title">${F.esc(b.title)}</div><div class="fig-chart" data-fig="${i}"></div><figcaption>Nguồn: ${F.esc(b.src)}</figcaption></figure>`;
-      const ws = links.filter((l) => l.a === i);
-      return h + ws.map((l) => F.indWidget(F.ind(l.i), l)).join('');
+      else if (b.t === 'table') h = `<div class="tbl" data-b="${i}"><div class="fig-t">${F.esc(b.cap)}</div><div class="sx"><table><thead><tr>${b.head.map((x, j) => `<th class="${j ? 'r' : ''}">${F.esc(x)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((row) => `<tr>${row.map((x, j) => `<td class="${j ? 'r' : ''}">${F.esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="src">Nguồn: ${F.esc(b.src)}</div></div>`;
+      else if (b.t === 'fig') h = `<figure data-b="${i}"><div class="fig-t">${F.esc(b.title)}</div><div class="fig-chart" data-fig="${i}"></div><figcaption>Nguồn: ${F.esc(b.src)}</figcaption></figure>`;
+      return h + links.filter((l) => l.a === i).map((l) => F.indWidget(F.ind(l.i), l)).join('');
     }).join('');
   };
-  F.mountFigures = (r, root) => $$('.fig-chart', root).forEach((el) => { const b = r.body[+el.dataset.fig]; F.chart.bar(el, { labels: b.data.map((d) => d[0]), values: b.data.map((d) => d[1]), dec: b.data.some((d) => d[1] % 1) ? 2 : 0, showValues: true, axis: false, height: 220, color: '#7BA7E8', highlightLast: true, suffix: b.unit === '%' ? '%' : ' ' + b.unit, label: b.title }); });
+  F.mountFigures = (r, root) => $$('.fig-chart', root).forEach((el) => { const b = r.body[+el.dataset.fig]; F.chart.bar(el, { labels: b.data.map((d) => d[0]), values: b.data.map((d) => d[1]), dec: b.data.some((d) => d[1] % 1) ? 2 : 0, showValues: true, axis: false, height: 210, highlightLast: true, suffix: b.unit === '%' ? '%' : ' ' + b.unit, label: b.title }); });
   F.indWidget = (ind, l) => {
     const ch = F.chg(ind); const macro = ind.group === 'macro';
-    return `<a class="ind-widget" href="${F.url('reader/indicator.html?id=' + ind.id + '&from=' + l.r)}"><span class="w-ico">${I(macro ? 'bars' : 'chart')}</span>
-      <span style="min-width:0"><span class="ai-tag">${I('sparkles')} Chỉ số liên quan · ${l.s === 'manual' ? 'Biên tập viên thêm' : 'Gợi ý bởi AI, đã kiểm duyệt'}</span><span class="w-name" style="display:block">${F.esc(ind.name)}${macro ? ` <span class="muted small" style="font-weight:400">· ${F.esc(ind.period)}</span>` : ''}</span>
-      <span class="row" style="gap:10px"><span class="w-val num">${F.fmtVal(ind)}</span><span class="chg-pill ${ch.d} num">${F.arrow(ch.c)} ${macro ? F.signed(ch.c, ind.dec) + ' đ.%' : F.signed(ch.p, 2) + '%'}</span></span></span>
-      <span class="w-spark">${macro ? F.chart.sparkBars(ind.series.values) : ((v) => F.chart.spark(v, F.dir(v[v.length - 1] - v[0])))(F.series(ind, '1M').values)}</span></a>`;
+    return `<a class="iw" href="${F.url('reader/indicator.html?id=' + ind.id + '&from=' + l.r)}"><span class="ic">${I(macro ? 'bars' : 'chart')}</span>
+      <span class="t"><span class="ai">${I('sparkles')}${l.s === 'manual' ? 'Chỉ số liên quan · Biên tập viên thêm' : 'Chỉ số liên quan · Vertex AI gợi ý, đã kiểm duyệt'}</span><span class="nm" style="display:block">${F.esc(ind.name)}${macro ? ` <span class="faint" style="font-weight:500">· ${F.esc(ind.period)}</span>` : ''}</span>
+      <span class="vv"><span class="num">${F.fmtVal(ind)}</span><span class="chg-pill ${ch.d} num">${F.arrow(ch.c)} ${F.chgText(ind)}</span></span></span>
+      <span class="sp">${macro ? F.chart.sparkBars(ind.series.values) : ((v) => F.chart.spark(v, F.dir(v[v.length - 1] - v[0])))(F.series(ind, '1M').values)}</span></a>`;
   };
 
-  /* ================= R03 · Chi tiết báo cáo ================= */
+  /* ---------- Quota & gửi phản biện ---------- */
   const quotaInfo = () => {
     const me = F.me(); const lim = F.db().config.quotaPerMonth; const unlimited = F.hasSub();
     const used = me ? F.db().inquiries.filter((q) => q.reader === me.id && Date.now() - new Date(q.createdAt) < 30 * 864e5).length : 0;
     return { used, lim, left: Math.max(lim - used, 0), unlimited };
   };
   F.quotaInfo = quotaInfo;
-  F.quotaBar = () => { const q = quotaInfo(); return q.unlimited ? `<div class="quota">${I('crown').replace('<svg', '<svg style="width:16px;height:16px;color:#B45309"')}<span>Hội viên Premium: phản biện không giới hạn</span></div>` : `<div class="quota"><span>Đã dùng <b class="num">${q.used}/${q.lim}</b> lượt phản biện (30 ngày)</span><span class="bar"><i style="width:${Math.min(100, (q.used / q.lim) * 100)}%"></i></span></div>`; };
+  F.quotaBar = () => { const q = quotaInfo(); return q.unlimited ? `<div class="quota">${I('crown', 'i-sm accent')}<span>Premium: phản biện 1:1 không giới hạn</span></div>` : `<div class="quota"><span>Đã dùng <b class="num">${q.used}/${q.lim}</b> lượt (30 ngày)</span><span class="bar"><i style="width:${Math.min(100, (q.used / q.lim) * 100)}%"></i></span></div>`; };
 
   F.openInquiry = (r, quote, block) => {
-    if (!F.requireAuth('Đăng nhập để gửi câu hỏi phản biện riêng tới tác giả báo cáo.')) return;
+    if (!F.requireAuth('Đăng nhập để gửi câu hỏi phản biện riêng tới chuyên gia tác giả.')) return;
     const me = F.me(); const e = F.expert(r.author);
-    if (me.blocked.includes(e.id)) { F.toast('Bạn đã chặn chuyên gia này. Bỏ chặn trong Cài đặt để tiếp tục.', 'error'); return; }
+    if (me.blocked.includes(e.id)) { F.toast('Bạn đã chặn chuyên gia này. Bỏ chặn trong Cài đặt → Quyền riêng tư.', 'error'); return; }
     const q = quotaInfo();
     if (!q.unlimited && q.left <= 0) {
-      F.modal({ title: 'Bạn đã dùng hết lượt phản biện', body: `<p class="sub">Tài khoản miễn phí được gửi tối đa ${q.lim} phiên phản biện trong 30 ngày để đảm bảo chuyên gia có đủ thời gian phản hồi chất lượng.</p>${F.session().phase2 ? `<div class="alert info mt-16">${I('crown')}<span>Hội viên Premium được mở rộng phản biện 1:1 không giới hạn và tham gia các buổi trao đổi kín định kỳ.</span></div>` : ''}`,
+      F.modal({ title: 'Đã dùng hết lượt phản biện', body: `<div class="stack"><p class="muted">Tài khoản miễn phí được mở tối đa ${q.lim} phiên phản biện trong 30 ngày để chuyên gia có đủ thời gian phản hồi chất lượng.</p>${F.session().phase2 ? `<div class="note accent">${I('crown')}<span>Hội viên <b>Premium</b> được phản biện 1:1 không giới hạn và tham gia buổi trao đổi kín định kỳ cùng chuyên gia.</span></div>` : ''}</div>`,
         actions: F.session().phase2 ? [{ label: 'Để sau' }, { label: 'Xem gói Premium', cls: 'btn-primary', onClick: () => F.go('reader/pricing.html') }] : [{ label: 'Đã hiểu', cls: 'btn-primary' }] });
       return;
     }
     F.modal({
-      title: 'Gửi câu hỏi phản biện', size: 'lg',
-      body: `<div class="stack"><div class="quote-block">“${F.esc(quote)}”<span class="qsrc">Trích từ: ${F.esc(r.title)}</span></div>
-        <div class="row">${F.avatar(e, 'sm')}<span class="small">Gửi riêng tới <b>${F.esc(e.name)}</b> ${F.verifiedTag(e, '')}</span></div>
-        <div class="field"><label for="iq">Câu hỏi / phản biện của bạn</label><textarea class="textarea" id="iq" maxlength="1500" placeholder="Nêu rõ điểm bạn muốn làm rõ hoặc phản biện, kèm lập luận/số liệu nếu có…"></textarea><div class="row between"><span class="hint">Tối thiểu 20 ký tự · Trao đổi học thuật, không yêu cầu khuyến nghị mua/bán.</span><span class="hint num" id="iqc">0/1500</span></div><span class="error-text hidden" id="iqe">Vui lòng nhập tối thiểu 20 ký tự.</span></div>
+      title: 'Gửi phản biện', size: 'lg',
+      body: `<div class="stack"><div class="quote-card">“${F.esc(quote)}”<small>Trích từ: ${F.esc(r.title)}</small></div>
+        <div class="row">${F.avatar(e, 'sm')}<span class="small">Gửi riêng tới <b>${F.esc(e.name)}</b> ${F.vb(e)}</span></div>
+        <div class="field"><label for="iq">Câu hỏi / lập luận phản biện</label><textarea class="textarea" id="iq" maxlength="1500" placeholder="Nêu rõ điểm muốn làm rõ hoặc phản biện, kèm lập luận/số liệu nếu có…"></textarea><div class="row between"><span class="hint">Tối thiểu 20 ký tự · Trao đổi học thuật, không yêu cầu khuyến nghị mua/bán.</span><span class="hint num" id="iqc">0/1500</span></div><span class="err hidden" id="iqe">Vui lòng nhập tối thiểu 20 ký tự.</span></div>
         ${F.quotaBar()}
-        <div class="perm-note">${I('lock')}<span>Phiên trao đổi 1:1 là <b>riêng tư</b>, không hiển thị công khai. Chuyên gia thường phản hồi trong <b>${F.db().config.slaHours} giờ</b>. Bạn có thể báo cáo vi phạm hoặc chặn bất kỳ lúc nào.</span></div></div>`,
-      actions: [{ label: 'Hủy' }, { label: `${I('send')} Gửi phản biện`, cls: 'btn-primary', onClick: (close, el) => {
+        <div class="note">${I('lock')}<span>Phiên 1:1 là <b>riêng tư</b>, không hiển thị công khai. Chuyên gia thường phản hồi trong <b>${F.db().config.slaHours} giờ</b>. Bạn có thể báo cáo vi phạm hoặc chặn bất kỳ lúc nào.</span></div></div>`,
+      actions: [{ label: 'Hủy' }, { label: `${I('send')} Gửi`, cls: 'btn-primary', onClick: (close, el) => {
         const v = $('#iq', el).value.trim(); if (v.length < 20) { $('#iqe', el).classList.remove('hidden'); $('#iq', el).classList.add('invalid'); return false; }
         const db = F.db(); const now = new Date().toISOString(); const id = F.uid('q');
         db.inquiries.unshift({ id, r: r.id, reader: me.id, expert: e.id, status: 'new', block, createdAt: now, slaDue: new Date(Date.now() + db.config.slaHours * 36e5).toISOString(), readerUnread: false, expertUnread: true, quote, messages: [{ by: me.id, at: now, x: v }] });
         F.save(); close();
-        F.modal({ title: 'Đã gửi phản biện', body: `<div class="center stack" style="align-items:center"><div class="avatar lg" style="background:#DCFCE7;color:#15803D">${I('checkCircle').replace('<svg', '<svg style="width:40px;height:40px"')}</div><p class="sub">Câu hỏi của bạn đã được gửi tới <b>${F.esc(e.name)}</b>. Bạn sẽ nhận thông báo khi chuyên gia phản hồi.</p></div>`, actions: [{ label: 'Tiếp tục đọc' }, { label: 'Xem phiên trao đổi', cls: 'btn-primary', onClick: () => F.go('reader/inquiry.html?id=' + id) }] });
+        F.modal({ title: 'Đã gửi phản biện', body: `<div class="empty" style="padding:12px 0"><div class="ico" style="background:var(--success-soft);color:var(--success)">${I('check')}</div><h3>Câu hỏi đã tới ${F.esc(e.name)}</h3><p>Bạn sẽ nhận thông báo trong tab Hoạt động khi chuyên gia phản hồi.</p></div>`, actions: [{ label: 'Tiếp tục đọc' }, { label: 'Mở cuộc trao đổi', cls: 'btn-primary', onClick: () => F.go('reader/inquiry.html?id=' + id) }] });
         return false;
       } }],
       onOpen: (el) => { const ta = $('#iq', el); ta.addEventListener('input', () => { $('#iqc', el).textContent = ta.value.length + '/1500'; if (ta.value.trim().length >= 20) { $('#iqe', el).classList.add('hidden'); ta.classList.remove('invalid'); } }); }
     });
   };
 
-  F.shareModal = (title, url) => F.modal({ title: 'Chia sẻ báo cáo', body: `<div class="stack"><p class="sub small">${F.esc(title)}</p><div class="row"><input class="input grow" id="shu" value="${F.esc(url)}" readonly><button class="btn btn-primary" id="cpy">${I('copy')}Sao chép</button></div><div class="row wrap" style="gap:8px">${['Facebook', 'LinkedIn', 'Zalo', 'Email'].map((n) => `<button class="chip" data-n="${n}">${n}</button>`).join('')}</div><p class="hint">Liên kết mở trang web báo cáo (có ảnh xem trước). Trên điện thoại đã cài app, liên kết sẽ mở thẳng trong ứng dụng FBV.</p></div>`,
-    onOpen: (el) => { $('#cpy', el).onclick = () => { try { navigator.clipboard.writeText(url); } catch (e) {} F.toast('Đã sao chép liên kết'); }; $$('[data-n]', el).forEach((b) => (b.onclick = () => F.toast('Mô phỏng: mở chia sẻ qua ' + b.dataset.n, 'info'))); } });
+  /* ---------- Aside (desktop) ---------- */
+  const asideHome = () => `<div class="group-title">Thị trường</div><div class="panel" style="padding:4px 16px">${['VNINDEX', 'VN30', 'USDVND', 'GOLD', 'ON_RATE'].map((id) => F.irow(F.ind(id), { short: true, nosp: true })).join('')}</div><div class="delay-note" style="padding:8px 4px 0">${I('clock')}Trễ 15 phút · Số liệu minh họa</div>
+    <div class="group-title mt-24">Chuyên gia FBV</div><div class="panel" style="padding:4px 16px">${F.db().experts.filter((e) => e.verified).slice(0, 4).map((e) => F.erow(e, { nobtn: true })).join('')}</div>${F.footLinks()}`;
 
-  /* ================= R04 · Trình xem PDF ================= */
-  pages.reportPdf = () => {
-    F.readerShell('research');
-    const r = F.report(F.param('id') || 'r5');
-    if (!r || r.status !== 'published' || !r.pdf) { app().innerHTML = `<div class="page narrow"><div class="card">${F.empty('file', 'Không có bản PDF', 'Báo cáo này chưa có bản PDF đính kèm.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Về trang Nghiên cứu</a>`)}</div></div>`; return; }
-    if (F.isLocked(r)) { app().innerHTML = `<div class="page narrow"><div class="card">${F.empty('lock', 'Bản PDF dành cho hội viên Premium', 'Nâng cấp để tải và đọc bản PDF đầy đủ của báo cáo.', `<a class="btn btn-primary" href="${F.url('reader/pricing.html?r=' + r.id)}">Xem gói Premium</a>`)}</div></div>`; return; }
-    F.setTitle(r.title);
-    F.setActions(`<a class="icon-btn" href="${F.url('assets/media/sample-report.pdf')}" download aria-label="Tải xuống">${I('download')}</a>`);
-    let zoom = 100;
-    app().innerHTML = `<div class="page" style="padding-top:12px"><div class="row between mb-12" style="gap:8px"><span class="xs muted" style="min-width:0">PDF · 5 trang · 77 KB · ${F.esc(F.expert(r.author).name)}</span><div class="row" style="gap:0;flex:none"><button class="icon-btn" id="zo" aria-label="Thu nhỏ">${I('zoomOut')}</button><span class="small num" id="zv" style="width:44px;text-align:center">100%</span><button class="icon-btn" id="zi" aria-label="Phóng to">${I('zoomIn')}</button></div></div>
-      <div class="card" style="padding:0;overflow:hidden;background:#525659"><div id="pdfWrap" style="height:calc(100vh - 180px);min-height:420px;overflow:auto"><iframe title="Bản PDF báo cáo" src="${F.url('assets/media/sample-report.pdf')}#toolbar=0&view=FitH" style="width:100%;height:100%;border:0;background:#fff"></iframe></div></div>
-      <p class="hint mt-12">Prototype nhúng trình xem PDF sẵn có của trình duyệt. Bản chính thức dùng pdf.js (web) và Native PDF Viewer (iOS/Android), có watermark theo tài khoản người đọc.</p></div>`;
-    const set = () => { $('#zv').textContent = zoom + '%'; $('#pdfWrap iframe').style.width = zoom + '%'; $('#pdfWrap iframe').style.height = zoom + '%'; };
-    $('#zi').onclick = () => { zoom = Math.min(200, zoom + 25); set(); }; $('#zo').onclick = () => { zoom = Math.max(50, zoom - 25); set(); };
-  };
-
-  const marketSeg = (cur) => `<nav class="seg-full" aria-label="Thị trường"><a href="${F.url('reader/market.html')}" class="${cur === 'market' ? 'active' : ''}">Chứng khoán</a><a href="${F.url('reader/macro.html')}" class="${cur === 'macro' ? 'active' : ''}">Vĩ mô & Tiền tệ</a></nav>`;
-
-  /* ================= R07 · Thị trường chứng khoán ================= */
-  pages.market = () => {
-    F.readerShell('market');
-    const mk = F.db().market; let cur = F.param('i') || 'VNINDEX'; let range = '1D'; let ex = 'HOSE';
-    const upd = new Date(mk.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    app().innerHTML = `<div class="page">${marketSeg('market')}<p class="small muted mb-12">Cập nhật ${upd} · Trễ 15 phút · Số liệu minh họa</p>
-      <div class="hscroll grid-d4 mb-16" id="idx">${['VNINDEX', 'VN30', 'HNX', 'UPCOM'].map((id) => F.indCard(F.ind(id), { data: true, active: id === cur, href: '#' })).join('')}</div>
-      <div class="home-grid"><div class="stack-lg" style="min-width:0">
-        <div class="card"><div class="row between wrap" style="gap:8px"><div class="row" style="gap:8px"><h3 id="cName"></h3><a class="small" id="cLink">Chi tiết ›</a></div></div><div class="row mt-8 wrap" style="gap:10px"><span class="big-val num" id="cVal"></span><span class="chg-pill num" id="cChg"></span></div>
-          <div class="seg stretch mt-12 mb-8" id="rng">${['1D', '1W', '1M', '1Y'].map((x) => `<button class="${x === range ? 'active' : ''}" data-r="${x}">${x}</button>`).join('')}</div><div id="mainChart"></div>${F.srcNote('Nguồn: HOSE/HNX qua nhà cung cấp dữ liệu · Trễ 15 phút · Minh họa')}</div>
-        <div class="card"><div class="card-head"><h3>Độ rộng thị trường</h3></div><div class="seg stretch mb-16" id="exs">${['HOSE', 'HNX', 'UPCOM'].map((x) => `<button class="${x === ex ? 'active' : ''}" data-x="${x}">${x === 'UPCOM' ? 'UPCoM' : x}</button>`).join('')}</div><div id="br"></div></div>
-        <div class="card"><div class="card-head"><h3>Khối ngoại (HOSE)</h3><span class="small muted">tỷ đồng</span></div>
-          <div class="me-stats" style="margin:0 0 14px"><a><span>Mua</span><b class="num">${F.num(mk.foreignToday.buy)}</b></a><a><span>Bán</span><b class="num">${F.num(mk.foreignToday.sell)}</b></a><a><span>Ròng</span><b class="num ${F.dir(mk.foreignToday.buy - mk.foreignToday.sell)}">${F.signed(mk.foreignToday.buy - mk.foreignToday.sell, 0)}</b></a></div>
-          <div class="section-title" style="margin-bottom:4px">Giá trị ròng 10 phiên</div><div id="ffChart"></div><div class="legend mt-8"><span><i style="background:var(--mkt-up)"></i>Mua ròng</span><span><i style="background:var(--mkt-down)"></i>Bán ròng</span></div></div>
-      </div>
-      <div class="stack-lg"><div class="card"><div class="card-head"><h3>Phân tích từ FBV</h3></div><div id="rel"></div><div class="src-note">${I('sparkles')}<span>Báo cáo phân tích biến động của chỉ số đang chọn — liên kết bởi Vertex AI.</span></div></div></div></div></div>`;
+  /* ================= R01 · Research Feed ================= */
+  pages.home = () => {
+    const v = F.shell({ tab: 'home', bar: 'root', rootTitle: 'Trang chủ', aside: asideHome() });
+    const me = F.me(); let s = F.param('s') || 'all';
+    const tabs = [['all', 'Tất cả'], ['fintech', 'Fintech'], ['macro', 'Kinh tế Vĩ mô'], ['micro', 'Kinh tế Vi mô']].concat(me ? [['following', 'Đang theo dõi']] : []);
+    v.innerHTML = `<div class="utabs sticky" id="st" role="tablist"></div><div id="feed"></div>`;
     const draw = () => {
-      const ind = F.ind(cur); const s = F.series(ind, range);
-      const base = range === '1D' ? ind.prev : s.values[0]; const c = ind.value - base; const p = (c / base) * 100; const d = F.dir(c);
-      $('#cName').textContent = ind.name; $('#cLink').href = F.url('reader/indicator.html?id=' + ind.id);
-      $('#cVal').textContent = F.fmtVal(ind); $('#cChg').className = 'chg-pill num ' + d; $('#cChg').textContent = `${F.arrow(c)} ${F.signed(c, 2)} (${F.signed(p, 2)}%)`;
-      F.chart.line($('#mainChart'), { labels: s.labels, values: s.values, dec: 2, ref: range === '1D' ? ind.prev : null, height: innerWidth < 768 ? 230 : 300, label: ind.name });
-      const rel = F.reportsOfInd(cur);
-      $('#rel').innerHTML = rel.length ? `<div class="mini-list">${rel.map((r) => `<a class="mini-row" href="${F.url('reader/report.html?id=' + r.id)}"><span class="n">${F.esc(r.title)}<small>${F.esc(F.expert(r.author).name)} · ${F.ago(r.publishedAt)}</small></span>${I('chevR').replace('<svg', '<svg style="width:18px;height:18px;flex:none;color:var(--text-3)"')}</a>`).join('')}</div>` : `<p class="small muted">Chưa có báo cáo liên kết với ${F.esc(ind.name)}.</p>`;
-      $$('#idx .ind-card').forEach((a) => a.classList.toggle('active', a.dataset.ind === cur));
-    };
-    const drawBr = () => {
-      const b = mk.breadth[ex]; const tot = b.up + b.down + b.flat;
-      $('#br').innerHTML = `<div class="breadth" role="img" aria-label="Tăng ${b.up}, giảm ${b.down}, đứng giá ${b.flat}"><span style="width:${(b.up / tot) * 100}%;background:var(--mkt-up)"></span><span style="width:${(b.flat / tot) * 100}%;background:var(--mkt-ref)"></span><span style="width:${(b.down / tot) * 100}%;background:var(--mkt-down)"></span></div>
-        <div class="breadth-legend"><span class="up num">▲ Tăng <b>${b.up}</b></span><span class="ref num">■ Đứng <b>${b.flat}</b></span><span class="down num">▼ Giảm <b>${b.down}</b></span></div>
-        <div class="row mt-12 wrap" style="gap:16px"><span class="small num" style="color:var(--mkt-ceil)">● Trần <b>${b.ceil}</b></span><span class="small num" style="color:var(--mkt-floor)">● Sàn <b>${b.floor}</b></span><span class="small sub">GTGD <b class="num">${F.num(mk.liquidity[ex])}</b> tỷ đ</span></div>`;
-    };
-    $$('#idx .ind-card').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); cur = a.dataset.ind; history.replaceState(null, '', '?i=' + cur); draw(); }));
-    $$('#rng button').forEach((b) => b.addEventListener('click', () => { range = b.dataset.r; $$('#rng button').forEach((x) => x.classList.toggle('active', x === b)); draw(); }));
-    $$('#exs button').forEach((b) => b.addEventListener('click', () => { ex = b.dataset.x; $$('#exs button').forEach((x) => x.classList.toggle('active', x === b)); drawBr(); }));
-    F.chart.bar($('#ffChart'), { labels: mk.foreign.labels, values: mk.foreign.values, dec: 0, mode: 'posneg', height: 190, signed: true, suffix: ' tỷ đ', label: 'Giá trị mua/bán ròng khối ngoại' });
-    draw(); drawBr();
-  };
-
-  /* ================= R08 · Vĩ mô & Tiền tệ ================= */
-  pages.macro = () => {
-    F.readerShell('market');
-    const rates = ['POLICY_RATE', 'ON_RATE', 'IB_1W', 'DEP_12M'].map(F.ind);
-    const rowPlain = (i) => { const c = F.chg(i); return `<a class="mini-row" href="${F.url('reader/indicator.html?id=' + i.id)}"><span class="n">${F.esc(i.name)}<small>${F.esc(i.freq)}</small></span><span class="v num">${F.fmtVal(i)}<small class="${c.d}">${F.arrow(c.c)} ${F.signed(c.c, 2)} đ.%</small></span></a>`; };
-    app().innerHTML = `<div class="page">${marketSeg('macro')}
-      <div class="home-grid"><div style="min-width:0">
-        <div class="card"><div class="card-head"><h3>LS qua đêm — 1 tháng</h3><a href="${F.url('reader/indicator.html?id=ON_RATE')}">Chi tiết</a></div><div id="onChart"></div>${F.srcNote('Nét đứt: lãi suất tái cấp vốn. Nguồn: NHNN — minh họa.')}</div>
-        <section class="sec">${F.secHead('Tỷ giá & Hàng hóa')}<div class="list-card">${['USDVND', 'DXY', 'GOLD', 'BRENT', 'WTI'].map((id) => F.miniRow(F.ind(id))).join('')}</div></section>
-        <section class="sec">${F.secHead('Chỉ tiêu kinh tế định kỳ')}<div class="ind-grid">${['GDP', 'CPI', 'FDI', 'IIP', 'TRADE_BAL', 'CREDIT'].map((id) => F.indCard(F.ind(id))).join('')}</div></section>
-      </div>
-      <div><section class="sec" style="margin-top:0">${F.secHead('Lãi suất')}<div class="list-card">${rates.map(rowPlain).join('')}</div></section></div></div>
-      ${F.srcNote('Nguồn: NHNN, Cục Thống kê, Cục Hải quan, nhà cung cấp dữ liệu quốc tế · Số liệu minh họa.')}</div>`;
-    const grid = $('.home-grid'); if (innerWidth < 1024) { const aside = grid.children[1]; grid.children[0].insertBefore(aside.firstElementChild, grid.children[0].children[1]); aside.remove(); $('.home-grid > div > section').style.marginTop = '24px'; }
-    const on = F.ind('ON_RATE'); const s = F.series(on, '1M');
-    F.chart.line($('#onChart'), { labels: s.labels, values: s.values, dec: 2, ref: F.ind('POLICY_RATE').value, refLabel: 'Tái cấp vốn', suffix: '%', height: innerWidth < 768 ? 210 : 260, color: '#1877F2', label: 'Lãi suất qua đêm' });
-  };
-
-  /* ================= R09 · Chi tiết chỉ số ================= */
-  pages.indicator = () => {
-    F.readerShell('market');
-    const ind = F.ind(F.param('id') || 'VNINDEX');
-    if (!ind) { app().innerHTML = `<div class="page narrow"><div class="card">${F.empty('chart', 'Không tìm thấy chỉ số', 'Mã chỉ số không tồn tại.', '')}</div></div>`; return; }
-    const isEq = ind.group === 'equity'; const macro = ind.group === 'macro'; const ch = F.chg(ind); let range = isEq ? '1D' : '1M';
-    F.setTitle(ind.name);
-    const rel = F.reportsOfInd(ind.id); const peers = F.db().indicators.filter((x) => x.group === ind.group && x.id !== ind.id).slice(0, 5);
-    app().innerHTML = `<div class="page"><div class="home-grid"><div class="stack-lg" style="min-width:0"><div class="card">
-        <div class="row wrap" style="gap:8px"><span class="badge">${F.GROUP[ind.group]}</span><span class="xs muted">${ind.id}</span></div>
-        <h1 class="mt-8" style="font-size:22px">${F.esc(ind.name)}</h1>
-        <div class="row mt-8 wrap" style="gap:10px"><span class="big-val num">${F.fmtVal(ind)}</span><span class="small muted">${F.esc(F.unitLabel(ind))}</span></div>
-        <div class="row mt-8 wrap" style="gap:8px"><span class="chg-pill num ${ch.d}" id="chgP"></span><span class="xs muted">${macro ? F.esc(ind.period) + ' · so với ' + F.esc(ind.prevLabel) : F.esc(ind.freq)}</span></div>
-        ${macro ? '' : `<div class="seg stretch mt-16" id="rng">${['1D', '1W', '1M', '1Y'].map((x) => `<button class="${x === range ? 'active' : ''}" data-r="${x}">${x}</button>`).join('')}</div>`}
-        <div id="ch" class="mt-12"></div>${F.srcNote('Nguồn: ' + F.esc(ind.source) + ' · Minh họa')}</div>
-        <div class="card"><div class="card-head"><h3>Thống kê</h3></div><div class="ind-grid" id="stats"></div></div>
-        ${F.kbIndicatorLinks ? F.kbIndicatorLinks(ind) : ''}
-        <section><div class="sec-head"><h2>Tài liệu phân tích</h2><span class="badge" style="background:var(--primary-50);color:var(--primary-700)">${I('sparkles').replace('<svg', '<svg style="width:13px;height:13px"')} Vertex AI</span></div>
-          ${rel.length ? `<div class="list-card">${rel.map((r) => F.reportRow(r, { dek: false })).join('')}</div>` : `<div class="card">${F.empty('file', 'Chưa có phân tích', 'Chưa có báo cáo nào của FBV được liên kết với chỉ số này.')}</div>`}
-          <div class="src-note">${I('info')}<span>Vertex AI đề xuất liên kết giữa nội dung báo cáo và danh mục chỉ số khi xuất bản; biên tập viên kiểm duyệt trước khi hiển thị.</span></div></section>
-      </div>
-      <div class="stack-lg"><div class="card"><div class="card-head"><h3>Thông tin chỉ số</h3></div><div class="stack small"><div class="row between"><span class="muted">Mã</span><b>${ind.id}</b></div><div class="row between"><span class="muted">Đơn vị</span><span>${F.esc(ind.unit)}</span></div><div class="row between" style="gap:12px"><span class="muted">Tần suất</span><span style="text-align:right">${F.esc(ind.freq)}</span></div><div class="row between" style="gap:12px"><span class="muted">Nguồn</span><span style="text-align:right">${F.esc(ind.source)}</span></div></div></div>
-        ${peers.length ? `<div class="card"><div class="card-head"><h3>Cùng nhóm</h3></div><div class="mini-list">${peers.map(F.miniRow).join('')}</div></div>` : ''}</div></div></div>`;
-    const stat = (x) => `<div class="card tight" style="border-radius:12px;background:var(--surface-2)"><div class="xs muted">${x[0]}</div><div class="num" style="font-weight:700;font-size:17px">${x[1]}</div></div>`;
-    const draw = () => {
-      const h = innerWidth < 768 ? 230 : 300;
-      if (macro) {
-        const s = ind.series; F.chart.bar($('#ch'), { labels: s.labels, values: s.values, dec: ind.dec, highlightLast: true, color: '#9DBEEB', height: h, suffix: ind.unit.startsWith('%') ? '%' : ' ' + ind.unit, label: ind.name, mode: s.values.some((v) => v < 0) ? 'posneg' : '' });
-        const v = s.values; const avg = v.reduce((a, b) => a + b, 0) / v.length;
-        $('#chgP').textContent = `${F.arrow(ch.c)} ${F.signed(ch.c, ind.dec)} so với kỳ trước`;
-        $('#stats').innerHTML = [['Kỳ gần nhất', F.num(ind.value, ind.dec)], ['Kỳ trước', F.num(ind.prev, ind.dec)], ['TB ' + v.length + ' kỳ', F.num(avg, ind.dec)], ['Cao nhất', F.num(Math.max(...v), ind.dec)], ['Thấp nhất', F.num(Math.min(...v), ind.dec)]].map(stat).join('');
-      } else {
-        const s = F.series(ind, range); const base = range === '1D' ? ind.prev : s.values[0]; const c = ind.value - base; const d = F.dir(c);
-        $('#chgP').className = 'chg-pill num ' + d; $('#chgP').textContent = `${F.arrow(c)} ${F.signed(c, ind.dec)} (${F.signed((c / base) * 100, 2)}%) · ${range}`;
-        F.chart.line($('#ch'), { labels: s.labels, values: s.values, dec: Math.max(ind.dec, ind.group === 'rate' ? 2 : ind.dec), ref: range === '1D' ? ind.prev : null, height: h, suffix: ind.unit === '%' ? '%' : '', label: ind.name });
-        const v = s.values; const y1 = F.series(ind, '1Y').values;
-        $('#stats').innerHTML = [[range === '1D' ? 'Tham chiếu' : 'Đầu kỳ', F.num(base, ind.dec)], ['Cao nhất ' + range, F.num(Math.max(...v), ind.dec)], ['Thấp nhất ' + range, F.num(Math.min(...v), ind.dec)], ['Thay đổi 1 năm', F.signed(((ind.value - y1[0]) / y1[0]) * 100, 2) + '%'], ['Cao nhất 52 tuần', F.num(Math.max(...y1), ind.dec)]].map(stat).join('');
+      $('#st').innerHTML = tabs.map((t) => `<button role="tab" class="${s === t[0] ? 'on' : ''}" data-s="${t[0]}">${t[1]}</button>`).join('');
+      $$('#st [data-s]').forEach((b) => (b.onclick = () => { s = b.dataset.s; history.replaceState(null, '', '?s=' + s); draw(); window.scrollTo({ top: 0 }); }));
+      let list = F.published();
+      if (['fintech', 'macro', 'micro'].includes(s)) list = list.filter((r) => r.stream === s);
+      if (s === 'following') list = list.filter((r) => me.follows.includes(r.author));
+      const mk = ['VNINDEX', 'VN30', 'HNX', 'UPCOM', 'USDVND', 'GOLD', 'BRENT', 'ON_RATE'];
+      let html = '';
+      if (s === 'all') {
+        if (!me) html += `<div style="padding:12px var(--gutter) 4px"><div class="note accent">${I('user')}<span class="grow">Bạn đang ở <b>chế độ Khách</b>: xem báo cáo và biểu đồ thị trường tự do. Đăng nhập để lưu bài, theo dõi chuyên gia và gửi phản biện.</span></div></div>`;
+        html += `<div class="sec"><h2>Thị trường hôm nay</h2><a href="${F.url('reader/market.html')}">Xem tất cả</a></div><div class="mstrip">${mk.map((id) => F.mcard(F.ind(id))).join('')}</div><div class="delay-note">${I('clock')}Dữ liệu trễ 15 phút · minh họa</div><div class="divider" style="margin-top:14px"></div>`;
       }
+      if (!list.length) html += s === 'following' ? F.empty('users', 'Chưa có bài từ chuyên gia bạn theo dõi', 'Theo dõi chuyên gia để thấy báo cáo mới của họ tại đây.', `<a class="btn btn-primary" href="${F.url('reader/search.html')}">Khám phá chuyên gia</a>`) : F.empty('file', 'Chưa có báo cáo', 'Luồng này chưa có báo cáo mới.');
+      list.forEach((r, i) => {
+        html += F.post(r);
+        if (i === 2 && s === 'all') html += `<div class="sec"><h2>Chuyên gia FBV</h2><p>Verified by FBV</p></div><div class="ecards">${F.db().experts.map(F.ecard).join('')}</div><div class="divider" style="margin-top:14px"></div>`;
+      });
+      $('#feed').innerHTML = html;
     };
-    $$('#rng button').forEach((b) => b.addEventListener('click', () => { range = b.dataset.r; $$('#rng button').forEach((x) => x.classList.toggle('active', x === b)); draw(); }));
+    draw();
+  };
+
+  /* ================= R02 · Tìm kiếm & bộ lọc ================= */
+  const norm = (x) => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  F.norm = norm;
+  pages.search = () => {
+    const v = F.shell({ tab: null, side: 'search', bar: 'back', left: '', notab: false, title: '' });
+    const ab = $('#ab'); ab.innerHTML = `<label class="search-field">${I('search')}<input id="q" type="search" placeholder="Tìm báo cáo, chuyên gia, chỉ số…" autocomplete="off" value="${F.esc(F.param('q') || '')}"></label><button class="txt-btn acc" id="cancel">Hủy</button>`;
+    ab.style.gap = '8px'; ab.style.padding = '0 12px 0 16px';
+    $('#cancel').onclick = () => F.back('reader/index.html');
+    document.title = 'Tìm kiếm · FBV';
+    let stream = F.param('s') || ''; let author = F.param('a') || ''; let sort = 'new'; let pdf = false;
+    const recentKey = 'fbv-recent'; const recent = () => { try { return JSON.parse(localStorage.getItem(recentKey) || '[]'); } catch (e) { return []; } };
+    const pushRecent = (t) => { if (!t) return; try { const r = recent().filter((x) => x !== t); r.unshift(t); localStorage.setItem(recentKey, JSON.stringify(r.slice(0, 6))); } catch (e) {} };
+    v.innerHTML = `<div class="chips" style="padding:10px var(--gutter) 6px" id="flt"></div><div id="res"></div>`;
+    const drawF = () => {
+      const a = author ? F.expert(author) : null;
+      $('#flt').innerHTML = [['', 'Tất cả'], ['fintech', 'Fintech'], ['macro', 'Vĩ mô'], ['micro', 'Vi mô']].map((x) => `<button class="chip ${stream === x[0] ? 'on' : ''}" data-st="${x[0]}">${x[1]}</button>`).join('') +
+        `<button class="chip ${a ? 'on' : ''}" id="fa">${I('user')}${a ? F.esc(a.short) : 'Tác giả'}${I('chevD', 'i-xs')}</button><button class="chip ${sort !== 'new' ? 'on' : ''}" id="fs">${I('sliders')}${{ new: 'Mới nhất', views: 'Đọc nhiều', rel: 'Liên quan' }[sort]}</button><button class="chip ${pdf ? 'on' : ''}" id="fp">${I('pdf')}Có PDF</button>`;
+      $$('[data-st]').forEach((b) => (b.onclick = () => { stream = b.dataset.st; drawF(); drawR(); }));
+      $('#fp').onclick = () => { pdf = !pdf; drawF(); drawR(); };
+      $('#fa').onclick = () => F.modal({ title: 'Lọc theo tác giả', body: `<div class="menu-list"><button data-au="">${I('users')}<span class="grow">Mọi tác giả</span>${!author ? I('check', 'i-sm accent') : ''}</button>${F.db().experts.map((e) => `<button data-au="${e.id}">${F.avatar(e, 'sm')}<span class="grow">${F.esc(e.name)} ${F.vb(e)}</span>${author === e.id ? I('check', 'i-sm accent') : ''}</button>`).join('')}</div>`, onOpen: (el, close) => $$('[data-au]', el).forEach((b) => (b.onclick = () => { author = b.dataset.au; close(); drawF(); drawR(); })) });
+      $('#fs').onclick = () => F.modal({ title: 'Sắp xếp', body: `<div class="menu-list">${[['new', 'Mới nhất'], ['views', 'Đọc nhiều nhất'], ['rel', 'Liên quan nhất']].map((x) => `<button data-so="${x[0]}"><span class="grow">${x[1]}</span>${sort === x[0] ? I('check', 'i-sm accent') : ''}</button>`).join('')}</div>`, onOpen: (el, close) => $$('[data-so]', el).forEach((b) => (b.onclick = () => { sort = b.dataset.so; close(); drawF(); drawR(); })) });
+    };
+    const drawR = () => {
+      const q = $('#q').value.trim(); const nq = norm(q);
+      const filtered = !!(stream || author || pdf);
+      if (!q && !filtered) {
+        const rc = recent(); const tags = ['Lãi suất', 'Tỷ giá', 'Lạm phát', 'FDI', 'Ngân hàng số', 'Khối ngoại', 'Thanh toán số', 'Logistics'];
+        $('#res').innerHTML = `${rc.length ? `<div class="sec"><h2>Tìm kiếm gần đây</h2><a href="#" id="clr">Xóa</a></div><div>${rc.map((t) => `<button class="lrow" style="width:100%;text-align:left" data-t="${F.esc(t)}">${I('history', 'i faint')}<span class="t"><b>${F.esc(t)}</b></span>${I('arrowUR', 'i-sm faint')}</button>`).join('')}</div>` : ''}
+          <div class="sec"><h2>Chủ đề phổ biến</h2></div><div class="chips" style="padding:4px var(--gutter);flex-wrap:wrap">${tags.map((t) => `<button class="chip" data-t="${t}">${t}</button>`).join('')}</div>
+          <div class="sec"><h2>Chuyên gia</h2></div>${F.db().experts.map((e) => F.erow(e)).join('')}`;
+        $$('[data-t]').forEach((b) => (b.onclick = () => { $('#q').value = b.dataset.t; pushRecent(b.dataset.t); drawR(); }));
+        const clr = $('#clr'); if (clr) clr.onclick = (e) => { e.preventDefault(); try { localStorage.removeItem(recentKey); } catch (x) {} drawR(); };
+        return;
+      }
+      const score = (r) => { if (!nq) return 1; const e = F.expert(r.author); let s = 0; const hay = [[r.title, 5], [r.dek, 2], [r.tags.join(' '), 4], [e.name, 3], [r.summary.join(' '), 1], [r.body.map((b) => b.x || '').join(' '), 1]]; nq.split(/\s+/).forEach((w) => hay.forEach(([t, wgt]) => { if (norm(t).includes(w)) s += wgt; })); return s; };
+      let list = F.published().filter((r) => (!stream || r.stream === stream) && (!author || r.author === author) && (!pdf || r.pdf)).map((r) => ({ r, s: score(r) })).filter((x) => x.s > 0);
+      list.sort((a, b) => (sort === 'views' ? b.r.views - a.r.views : sort === 'rel' ? b.s - a.s : new Date(b.r.publishedAt) - new Date(a.r.publishedAt)));
+      const ex = nq ? F.db().experts.filter((e) => norm(e.name + ' ' + e.title).includes(nq)) : [];
+      const inds = nq ? F.db().indicators.filter((i) => norm(i.name + ' ' + i.id + ' ' + i.syn.join(' ')).includes(nq)).slice(0, 4) : [];
+      $('#res').innerHTML = `${ex.length ? `<div class="sec"><h2>Chuyên gia</h2></div>${ex.map((e) => F.erow(e)).join('')}` : ''}
+        ${inds.length ? `<div class="sec"><h2>Chỉ số</h2></div><div style="padding:4px var(--gutter)"><div class="group">${inds.map((i) => F.irow(i)).join('')}</div></div>` : ''}
+        <div class="sec"><h2>Báo cáo</h2><p>${list.length} kết quả</p></div>${list.length ? list.map((x) => F.postCompact(x.r)).join('') : F.empty('search', 'Không tìm thấy báo cáo', 'Thử từ khóa khác hoặc bỏ bớt bộ lọc.')}`;
+    };
+    let t; $('#q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(drawR, 150); });
+    $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { pushRecent($('#q').value.trim()); $('#q').blur(); } });
+    drawF(); drawR();
+    if (!F.param('q') && window.innerWidth >= 768) $('#q').focus();
+  };
+
+  /* ================= R03 · Trình đọc báo cáo ================= */
+  pages.report = () => {
+    const r = F.report(F.param('id')) || F.published()[0]; const e = F.expert(r.author); const me = F.me();
+    const nid = F.param('n'); if (nid && me) { const n = F.db().notifications.find((x) => x.id === nid); if (n) { n.read = true; F.save(); } }
+    if (me) { me.history = [r.id].concat(me.history.filter((x) => x !== r.id)).slice(0, 30); F.save(); }
+    const saved = F.isSaved(r.id); const locked = F.isLocked(r);
+    const v = F.shell({ bar: 'back', back: 'reader/index.html', notab: true, title: '', right: `<button class="icon-btn ${saved ? 'on' : ''}" data-bm="${r.id}" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button><button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
+    document.title = r.title + ' · FBV';
+    document.body.style.setProperty('--dock', '64px');
+    const links = F.linksOfReport(r.id); const related = F.published().filter((x) => x.id !== r.id && x.stream === r.stream).slice(0, 3);
+    const myQ = me ? F.db().inquiries.filter((q) => q.reader === me.id && q.r === r.id) : [];
+    const cut = Math.min(2, r.body.length);
+    v.innerHTML = `<div class="toc-prog" id="prog"></div><article class="article">
+      <div class="art-k"><span class="stream">${F.STREAM[r.stream]}</span>${r.premium && F.session().phase2 ? `<span class="tag prem">${I('crown', 'i-xs')}Premium</span>` : ''}${r.pdf ? `<span class="tag">${I('pdf', 'i-xs')}Có bản PDF</span>` : ''}</div>
+      <h1 class="art-t">${F.esc(r.title)}</h1><p class="art-d">${F.esc(r.dek)}</p>
+      <div class="art-by"><a href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'md')}</a><div class="t"><a href="${F.url('reader/expert.html?id=' + e.id)}"><b>${F.esc(e.name)} ${F.vb(e)}</b></a><small>${F.dateLong(r.publishedAt)} · ${r.readTime} phút đọc</small></div>${F.followBtn(e, 'btn btn-xs')}</div>
+      <div class="art-acts"><span>${I('eye')}${F.compact(r.views)}</span><a href="#phan-bien">${I('chat')}${F.inqCount(r.id)}</a><span class="sp"></span>${r.pdf ? `<a href="${F.url('reader/report-pdf.html?id=' + r.id)}" aria-label="Mở PDF">${I('pdf')}</a>` : ''}<button class="${saved ? 'on' : ''}" data-bm="${r.id}" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div>
+      <div class="summary"><h4>Tóm tắt điều hành</h4><ul>${r.summary.map((x) => `<li>${F.esc(x)}</li>`).join('')}</ul></div>
+      ${locked ? `<div class="paywall"><div class="prose fade">${F.renderBlocks(r, { to: cut + 2, widgets: false })}</div>
+        <div class="pw-card"><div class="ic">${I('lock')}</div><h3>Nội dung chuyên sâu dành cho hội viên Premium</h3><p>Bạn đang xem bản tóm tắt. Nâng cấp để đọc toàn văn, bảng số liệu, bản PDF và phản biện 1:1 không giới hạn.</p>
+          <div class="stack"><a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/pricing.html?r=' + r.id)}">Nâng cấp Premium</a><a class="btn btn-gray btn-block" href="${F.url('reader/checkout.html?plan=single&r=' + r.id)}">Mở khóa riêng báo cáo này · ${F.num(79000)}đ</a><button class="btn-text" id="restore" style="margin:4px auto 0">Khôi phục giao dịch</button></div></div></div>`
+        : `<div class="prose" id="prose">${F.renderBlocks(r)}</div>`}
+      <div class="tags-row">${r.tags.map((t) => `<a class="chip" href="${F.url('reader/search.html?q=' + encodeURIComponent(t))}">${F.esc(t)}</a>`).join('')}</div>
+      ${F.disclaimer()}
+      ${links.length ? `<div class="sec" style="padding-left:0;padding-right:0"><h2>Chỉ số trong bài</h2><p>${I('sparkles', 'i-xs')}</p></div><div class="group">${links.map((l) => F.irow(F.ind(l.i))).join('')}</div><p class="hint mt-8">Liên kết do Google Vertex AI gợi ý tại thời điểm xuất bản và được biên tập viên FBV kiểm duyệt.</p>` : ''}
+      <div id="phan-bien" class="sec" style="padding-left:0;padding-right:0"><h2>Phản biện 1:1</h2></div>
+      <div class="panel"><div class="row top"><span class="ib" style="width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none">${I('quote', 'i-sm')}</span><div class="grow"><b>Bôi đen một đoạn hoặc số liệu bất kỳ</b><p class="muted small mt-4">để gửi câu hỏi phản biện riêng tới ${F.esc(e.name)}. Trao đổi kín, không công khai.</p></div></div>
+        ${myQ.length ? `<div class="menu-list mt-12">${myQ.map((q) => `<a href="${F.url('reader/inquiry.html?id=' + q.id)}">${I('chat')}<span class="grow ellipsis">“${F.esc(q.quote)}”</span>${F.iStatusBadge(q.status)}</a>`).join('')}</div>` : ''}
+        <button class="btn btn-gray btn-block mt-12" id="askAll">${I('edit')}Đặt câu hỏi về toàn bài</button></div>
+      <div class="sec" style="padding-left:0;padding-right:0"><h2>Về tác giả</h2></div>
+      <div class="panel" style="padding:0">${F.erow(e, { bio: true })}</div>
+      ${related.length ? `<div class="sec" style="padding-left:0;padding-right:0"><h2>Đọc tiếp trong ${F.STREAM_S[r.stream]}</h2></div><div style="margin:0 calc(-1 * var(--gutter))">${related.map((x) => F.postCompact(x)).join('')}</div>` : ''}
+    </article>
+    <div class="actbar"><div class="inner"><button class="btn btn-primary" id="askBtn">${I('quote')}<span class="lbl">Trích dẫn & phản biện</span></button>${r.pdf ? `<a class="icon-btn" href="${F.url('reader/report-pdf.html?id=' + r.id)}" aria-label="Xem PDF">${I('pdf')}</a>` : ''}<button class="icon-btn ${saved ? 'on' : ''}" data-bm="${r.id}" id="bm" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div></div>`;
+    if (!locked) F.mountFigures(r, $('#prose'));
+    const rs = $('#restore'); if (rs) rs.onclick = () => { F.toast('Không tìm thấy giao dịch trước đó cho tài khoản này', 'info'); };
+    const askWhole = () => { if (locked) { F.go('reader/pricing.html?r=' + r.id); return; } F.openInquiry(r, r.summary[0], 0); };
+    $('#askAll').onclick = askWhole;
+    $('#askBtn').onclick = () => { const sel = String(window.getSelection() || '').trim(); if (sel.length > 8 && !locked) { const b = selBlock(); F.openInquiry(r, sel.slice(0, 400), b); } else if (locked) F.go('reader/pricing.html?r=' + r.id); else F.toast('Bôi đen một đoạn trong bài để trích dẫn, hoặc dùng “Đặt câu hỏi về toàn bài”.', 'info'); };
+    $('#more').onclick = () => F.menu([
+      r.pdf ? { icon: 'pdf', label: 'Mở bản PDF', onClick: () => F.go('reader/report-pdf.html?id=' + r.id) } : null,
+      { icon: 'link', label: 'Sao chép liên kết', onClick: () => { try { navigator.clipboard.writeText(location.href); } catch (x) {} F.toast('Đã sao chép liên kết'); } },
+      { icon: 'user', label: 'Xem hồ sơ tác giả', onClick: () => F.go('reader/expert.html?id=' + e.id) },
+      { icon: 'flag', label: 'Báo cáo nội dung', danger: true, onClick: () => F.toast('Đã gửi phản ánh tới ban biên tập FBV', 'info') }
+    ].filter(Boolean));
+    // Tiến độ đọc
+    const prog = $('#prog'); const onS = () => { const h = document.documentElement; const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight); prog.style.width = Math.min(100, p * 100) + '%'; };
+    window.addEventListener('scroll', onS, { passive: true });
+    // Bôi đen → trích dẫn
+    const selBlock = () => { const s = window.getSelection(); if (!s.rangeCount) return 0; const n = s.getRangeAt(0).startContainer; const el = (n.nodeType === 1 ? n : n.parentElement).closest('[data-b]'); return el ? +el.dataset.b : 0; };
+    let pop = null; const hide = () => { if (pop) { pop.remove(); pop = null; } };
+    const show = () => {
+      const s = window.getSelection(); const txt = String(s || '').trim(); const prose = $('#prose');
+      if (!prose || !s.rangeCount || txt.length < 8 || !prose.contains(s.anchorNode)) { hide(); return; }
+      hide(); pop = document.createElement('div'); pop.className = 'sel-pop';
+      pop.innerHTML = `<button data-q>${I('quote')}Trích dẫn & phản biện</button><button data-c>${I('copy')}Sao chép</button>`;
+      if (window.innerWidth < 768) { pop.classList.add('fixed'); document.body.appendChild(pop); }
+      else { const rc = s.getRangeAt(0).getBoundingClientRect(); pop.style.left = rc.left + rc.width / 2 + window.scrollX + 'px'; pop.style.top = rc.top + window.scrollY - 10 + 'px'; document.body.appendChild(pop); }
+      pop.addEventListener('mousedown', (x) => x.preventDefault());
+      $('[data-q]', pop).onclick = () => { const b = selBlock(); hide(); F.openInquiry(r, txt.slice(0, 400), b); };
+      $('[data-c]', pop).onclick = () => { try { navigator.clipboard.writeText(txt); } catch (x) {} hide(); F.toast('Đã sao chép trích dẫn'); };
+    };
+    document.addEventListener('mouseup', () => setTimeout(show, 10));
+    document.addEventListener('selectionchange', () => { if (window.innerWidth < 768) { clearTimeout(pages._st); pages._st = setTimeout(show, 250); } });
+    document.addEventListener('mousedown', (x) => { if (pop && !pop.contains(x.target)) hide(); });
+    if (location.hash === '#phan-bien') setTimeout(() => $('#phan-bien').scrollIntoView(), 50);
+  };
+
+  /* ================= R04 · Native PDF Viewer ================= */
+  pages.reportPdf = () => {
+    const r = F.report(F.param('id')) || F.published()[0];
+    const v = F.shell({ bar: 'back', back: 'reader/report.html?id=' + r.id, notab: true, title: 'Bản PDF', right: F.isLocked(r) ? '' : `<a class="icon-btn" href="${F.url('assets/media/sample-report.pdf')}" download="FBV-${r.id}.pdf" aria-label="Tải xuống">${I('download')}</a><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button>` });
+    if (F.isLocked(r)) { v.innerHTML = F.empty('lock', 'Bản PDF dành cho hội viên Premium', 'Nâng cấp để đọc và tải bản PDF đầy đủ của báo cáo.', `<a class="btn btn-primary" href="${F.url('reader/pricing.html?r=' + r.id)}">Xem gói Premium</a>`); return; }
+    let z = 100;
+    v.innerHTML = `<div class="pdfv"><div class="pdf-tools"><span class="grow ellipsis"><b style="color:var(--text)">${F.esc(r.title)}</b></span><button class="icon-btn sm" id="zo" aria-label="Thu nhỏ">${I('zoomOut')}</button><span class="num" id="zv" style="min-width:44px;text-align:center">100%</span><button class="icon-btn sm" id="zi" aria-label="Phóng to">${I('zoomIn')}</button></div>
+      <div class="pdf-frame"><object id="pdfo" data="${F.url('assets/media/sample-report.pdf')}#zoom=100" type="application/pdf"><div class="pdf-fallback">${F.empty('pdf', 'Trình duyệt không hiển thị PDF nhúng', 'Trên ứng dụng di động, PDF mở bằng trình xem gốc (Native PDF Viewer) với cử chỉ phóng to, tìm kiếm và mục lục.', `<a class="btn btn-primary" href="${F.url('assets/media/sample-report.pdf')}" target="_blank">Mở PDF</a>`)}</div></object></div></div>`;
+    const setZ = (d) => { z = Math.max(50, Math.min(200, z + d)); $('#zv').textContent = z + '%'; const o = $('#pdfo'); const n = o.cloneNode(true); n.data = F.url('assets/media/sample-report.pdf') + '#zoom=' + z; o.replaceWith(n); };
+    $('#zo').onclick = () => setZ(-25); $('#zi').onclick = () => setZ(25);
+  };
+
+  /* ================= R06 · Hồ sơ chuyên gia ================= */
+  pages.expert = () => {
+    const e = F.expert(F.param('id')) || F.db().experts[0]; const me = F.me();
+    const list = F.reportsOf(e.id); const answered = F.db().inquiries.filter((q) => q.expert === e.id && ['answered', 'closed'].includes(q.status)).length + (e.verified ? 40 : 3);
+    const v = F.shell({ bar: 'back', back: 'reader/index.html', title: '', right: `<button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
+    document.title = e.name + ' · FBV';
+    let tab = 'posts';
+    v.innerHTML = `<div class="prof"><div class="prof-top"><div class="t"><h1>${F.esc(e.name)}</h1><div class="h">${F.esc(e.title)}</div></div>${F.avatar(e, 'xl')}</div>
+      <div class="meta">${e.verified ? `<span class="verified-pill">${F.vb(e)}Verified by FBV</span>` : `<span class="tag warn">${I('clock', 'i-xs')}Đang chờ FBV thẩm định</span>`}<span>${F.esc(e.org)}</span></div>
+      <p class="bio">${F.esc(e.bio)}</p>
+      <div class="stats-row"><div><b class="num">${list.length}</b><span>Báo cáo</span></div><div><b class="num">${F.compact(F.followers(e.id))}</b><span>Người theo dõi</span></div><div><b class="num">${answered}</b><span>Phản biện đã trả lời</span></div></div>
+      <div class="btns">${F.followBtn(e, 'btn')}<button class="btn btn-gray" id="shareP">${I('share')}Chia sẻ</button></div></div>
+      <div class="utabs mt-16" id="tb"></div><div id="tv"></div>`;
+    const draw = () => {
+      $('#tb').innerHTML = [['posts', 'Báo cáo', list.length], ['about', 'Giới thiệu']].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}${t[2] != null ? `<span class="cnt">${t[2]}</span>` : ''}</button>`).join('');
+      $$('#tb [data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));
+      $('#tv').innerHTML = tab === 'posts' ? (list.length ? list.map((r) => F.postCompact(r)).join('') : F.empty('file', 'Chưa có báo cáo', 'Chuyên gia chưa xuất bản báo cáo nào.'))
+        : `<div class="page mt-16"><div class="groups"><div><div class="group-title">Thông tin</div><div class="group plain">
+          <div class="gi noicon"><span class="gl">Lĩnh vực</span><span class="gv">${e.fields.map((f) => F.STREAM_S[f]).join(', ')}</span></div>
+          <div class="gi noicon"><span class="gl">Đơn vị</span><span class="gv">${F.esc(e.org)}</span></div>
+          <div class="gi noicon"><span class="gl">Chức danh</span><span class="gv">${F.esc(e.title)}</span></div></div></div>
+          <div><div class="group-title">Chứng thực</div><div class="note ${e.verified ? 'accent' : 'warn'}">${I(e.verified ? 'shieldCheck' : 'clock')}<span>${e.verified ? '<b>Verified by FBV</b> — Danh tính, học vị và kinh nghiệm chuyên môn đã được Hội đồng FBV Review thẩm định. Mọi báo cáo của chuyên gia đều qua quy trình thẩm định học thuật 3 bước.' : 'Hồ sơ đang được Hội đồng FBV Review thẩm định. Huy hiệu sẽ hiển thị sau khi hoàn tất.'}</span></div></div></div></div>`;
+    };
+    draw();
+    $('#shareP').onclick = () => F.shareSheet(e.name, location.href);
+    $('#more').onclick = () => F.menu([
+      { icon: 'link', label: 'Sao chép liên kết hồ sơ', onClick: () => { try { navigator.clipboard.writeText(location.href); } catch (x) {} F.toast('Đã sao chép liên kết'); } },
+      { icon: 'ban', label: me && me.blocked.includes(e.id) ? 'Bỏ chặn chuyên gia' : 'Chặn chuyên gia', danger: true, onClick: () => { if (!F.requireAuth()) return; const b = me.blocked; const i = b.indexOf(e.id); if (i > -1) { b.splice(i, 1); F.toast('Đã bỏ chặn'); } else { b.push(e.id); F.toast('Đã chặn. Bạn sẽ không nhận tin nhắn từ chuyên gia này.', 'info'); } F.save(); } }
+    ]);
+  };
+
+  /* ================= R07 · Thư viện (Đã lưu · Đang theo dõi · Đã đọc) ================= */
+  pages.bookmarks = () => {
+    const v = F.shell({ tab: 'library', bar: 'root', rootTitle: '' });
+    const me = F.me();
+    v.innerHTML = `<h1 class="large-title">Thư viện</h1><div id="lib"></div>`;
+    if (!me) { $('#lib').innerHTML = F.gate('bookmark', 'Lưu báo cáo để đọc sau', 'Đăng nhập để lưu báo cáo, theo dõi chuyên gia và đồng bộ lịch sử đọc trên mọi thiết bị.'); return; }
+    let tab = F.param('t') || 'saved';
+    const draw = () => {
+      const saved = me.bookmarks.map(F.report).filter(Boolean); const fol = me.follows.map(F.expert).filter(Boolean); const hist = me.history.map(F.report).filter(Boolean);
+      $('#lib').innerHTML = `<div class="utabs" id="tb">${[['saved', 'Đã lưu', saved.length], ['following', 'Đang theo dõi', fol.length], ['history', 'Đã đọc', hist.length]].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}<span class="cnt">${t[2]}</span></button>`).join('')}</div><div id="tv"></div>`;
+      $$('#tb [data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; history.replaceState(null, '', '?t=' + tab); draw(); }));
+      const tv = $('#tv');
+      if (tab === 'saved') tv.innerHTML = saved.length ? saved.map((r) => F.postCompact(r)).join('') : F.empty('bookmark', 'Chưa có báo cáo đã lưu', 'Nhấn biểu tượng lưu trên báo cáo để đọc lại sau.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Khám phá báo cáo</a>`);
+      else if (tab === 'following') tv.innerHTML = (fol.length ? fol.map((e) => F.erow(e)).join('') : F.empty('users', 'Bạn chưa theo dõi chuyên gia nào', 'Theo dõi để nhận thông báo khi chuyên gia xuất bản báo cáo mới.')) + `<div class="sec"><h2>Gợi ý cho bạn</h2></div>${F.db().experts.filter((e) => !me.follows.includes(e.id)).map((e) => F.erow(e)).join('')}`;
+      else tv.innerHTML = hist.length ? hist.map((r) => F.postCompact(r, { date: 'ago' })).join('') + `<div class="page mt-16"><button class="btn btn-gray btn-block" id="clh">Xóa lịch sử đọc</button></div>` : F.empty('history', 'Chưa có lịch sử đọc', 'Các báo cáo bạn mở sẽ xuất hiện tại đây.');
+      const c = $('#clh'); if (c) c.onclick = () => F.confirm('Xóa lịch sử đọc?', 'Danh sách báo cáo đã đọc sẽ bị xóa khỏi tài khoản.', 'Xóa', 'btn-danger', () => { me.history = []; F.save(); draw(); F.toast('Đã xóa lịch sử đọc'); });
+    };
     draw();
   };
 })();
