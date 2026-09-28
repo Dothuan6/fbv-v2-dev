@@ -1,7 +1,15 @@
-# FBV v2 — Web App Prototype
+# FBV v2 — Hệ tri thức · Web App Prototype
 
 Prototype click-through (HTML/CSS/JS thuần, không cần build) cho **Web Reader** (độc giả) và **CMS Web Portal** (chuyên gia, thẩm định, biên tập, quản trị) của FBV v2.
 Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu trong `localStorage` của trình duyệt.
+
+## Mô hình hệ tri thức
+
+- **Lĩnh vực → Chủ đề → Tài liệu / Khái niệm / Chỉ số** (không tổ chức theo dòng tin theo thời gian).
+- **Trang chủ đề**: tổng quan kiểu bách khoa, luận điểm chính (có nguồn), lộ trình đọc Nền tảng → Phân tích → Chuyên sâu, khái niệm cốt lõi, chỉ số theo dõi, chủ đề liên quan.
+- **Tài liệu tri thức**: mã tài liệu, cấp độ, phiên bản, thẩm định, mục lục, thuật ngữ tự liên kết, nguồn tham khảo, trích dẫn, lịch sử phiên bản.
+- **Từ điển thuật ngữ**, **Bản đồ tri thức** (đồ thị chủ đề), **Tra cứu** nhóm theo loại tri thức, **Sổ tay** (lưu tài liệu, đánh dấu + ghi chú, khái niệm, chủ đề theo dõi).
+- **CMS**: Cây chủ đề, Thuật ngữ (mẫu nhận diện), gắn chủ đề/cấp độ/nguồn khi soạn thảo, chỉ báo “Sức khỏe hệ tri thức”.
 
 ## Giao diện
 
@@ -33,12 +41,15 @@ Rồi truy cập http://localhost:8080
 ```
 index.html            Hub danh mục màn hình
 404.html              Trang lỗi (Netlify)
-reader/               25 màn hình độc giả + Phase 2
-cms/                  12 màn hình CMS
+reader/               29 màn hình độc giả (hệ tri thức) + Phase 2
+cms/                  14 màn hình CMS
 assets/css/app.css    Design tokens + component dùng chung (Hub, CMS)
 assets/css/reader.css App UI mobile-first cho Web Reader
 assets/js/shell.js    App shell Reader (appbar, tab bar, rail) + component mobile
-assets/js/data.js     Dữ liệu giả (báo cáo, chuyên gia, chỉ số, phản biện…)
+assets/js/data.js     Dữ liệu giả (tài liệu, chuyên gia, chỉ số, phản biện…)
+assets/js/knowledge.js Mô hình tri thức: lĩnh vực, chủ đề, khái niệm, metadata tài liệu
+assets/js/kb.js       Màn hình hệ tri thức (Khám phá, Chủ đề, Tài liệu, Khái niệm, Từ điển, Tra cứu, Sổ tay)
+assets/css/kb.css     Phong cách thư viện / bách khoa
 assets/js/core.js     Store, layout, component, thanh Demo
 assets/js/charts.js   Biểu đồ SVG (line, bar, sparkline) — không phụ thuộc thư viện
 assets/js/reader.js   Feed, báo cáo, thị trường, chỉ số

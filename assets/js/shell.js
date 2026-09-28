@@ -9,19 +9,23 @@
 
   /* Cấu hình từng trang: tab đang chọn, tiêu đề, nút quay lại, dock */
   const META = {
-    home: { tab: 'research', root: true, title: 'Nghiên cứu', brand: true },
-    market: { tab: 'market', root: true, title: 'Thị trường' },
-    macro: { tab: 'market', root: true, title: 'Thị trường', rail: 'macro' },
+    home: { tab: 'explore', root: true, title: 'Khám phá', brand: true },
+    topics: { tab: 'topics', root: true, title: 'Chủ đề' },
+    market: { tab: 'data', root: true, title: 'Dữ liệu', rail: 'market' },
+    macro: { tab: 'data', root: true, title: 'Dữ liệu', rail: 'macro' },
     inquiries: { tab: 'inquiries', root: true, title: 'Phản biện' },
     account: { tab: 'me', root: true, title: 'Tôi' },
-    search: { tab: 'research', title: 'Tìm kiếm', back: 'reader/index.html', noSearch: true },
-    report: { tab: 'research', title: '', back: 'reader/index.html', dock: 'report' },
-    reportPdf: { tab: 'research', title: 'Bản PDF', back: 'reader/index.html', noTab: true },
-    expert: { tab: 'research', title: 'Chuyên gia', back: 'reader/index.html' },
-    indicator: { tab: 'market', title: 'Chỉ số', back: 'reader/market.html' },
+    topic: { tab: 'topics', title: 'Chủ đề', back: 'reader/topics.html' },
+    concept: { tab: 'topics', title: 'Khái niệm', back: 'reader/glossary.html', rail: 'glossary' },
+    glossary: { tab: 'topics', title: 'Từ điển thuật ngữ', back: 'reader/topics.html', rail: 'glossary' },
+    search: { tab: 'explore', title: 'Tra cứu', back: 'reader/index.html', noSearch: true },
+    report: { tab: 'topics', title: '', back: 'reader/topics.html', dock: 'report' },
+    reportPdf: { tab: 'topics', title: 'Bản PDF', back: 'reader/index.html', noTab: true },
+    expert: { tab: 'explore', title: 'Chuyên gia', back: 'reader/index.html' },
+    indicator: { tab: 'data', title: 'Chỉ số', back: 'reader/market.html', rail: 'market' },
     inquiry: { tab: 'inquiries', title: 'Phiên phản biện', back: 'reader/inquiries.html', dock: 'chat' },
     notifications: { tab: 'me', title: 'Thông báo', back: 'reader/account.html', rail: 'notifications' },
-    bookmarks: { tab: 'me', title: 'Bài đã lưu', back: 'reader/account.html', rail: 'bookmarks' },
+    bookmarks: { tab: 'me', title: 'Sổ tay tri thức', back: 'reader/account.html', rail: 'bookmarks' },
     settings: { tab: 'me', title: 'Cài đặt & Quyền riêng tư', back: 'reader/account.html' },
     deleteAccount: { tab: 'me', title: 'Xóa tài khoản', back: 'reader/settings.html', noTab: true },
     terms: { tab: 'me', title: 'Điều khoản sử dụng', back: 'reader/account.html' },
@@ -44,7 +48,7 @@
 
   F.readerShell = (active, opts = {}) => {
     const page = document.body.dataset.page;
-    const m = Object.assign({ tab: active || 'research' }, META[page] || {}, opts);
+    const m = Object.assign({ tab: 'explore' }, META[page] || {}, opts);
     const me = F.me(); const db = F.db(); const b = document.body;
     const unread = me ? db.notifications.filter((n) => n.user === me.id && !n.read).length : 0;
     const inqUnread = me ? db.inquiries.filter((q) => q.reader === me.id && q.readerUnread).length : 0;
@@ -56,12 +60,12 @@
     else if (!m.noTab && !m.auth) b.classList.add('has-tabbar');
 
     /* ----- Rail / sidebar (≥768) ----- */
-    const railActive = m.rail || m.tab;
+    const railActive = m.rail || (m.tab === 'data' ? 'market' : m.tab);
     const ri = (key, href, label, icon, badge) => `<a class="r-item ${railActive === key ? 'active' : ''}" href="${F.url(href)}" title="${label}">${I(icon)}<span>${label}</span>${badge ? `<span class="r-badge">${badge}</span>` : ''}</a>`;
     const rail = document.createElement('aside'); rail.className = 'rail'; rail.setAttribute('aria-label', 'Điều hướng');
     rail.innerHTML = `<a class="r-brand" href="${F.url('reader/index.html')}">${F.brandMark()}<span>FBV<small>Hệ tri thức</small></span></a>
-      ${ri('research', 'reader/index.html', 'Nghiên cứu', 'book')}${ri('market', 'reader/market.html', 'Thị trường', 'chart')}${ri('macro', 'reader/macro.html', 'Vĩ mô', 'globe')}${ri('inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread)}
-      <div class="r-sep"></div>${me ? ri('bookmarks', 'reader/bookmarks.html', 'Đã lưu', 'bookmark') + ri('notifications', 'reader/notifications.html', 'Thông báo', 'bell', unread) : ''}${ri('me', 'reader/account.html', me ? 'Tôi' : 'Tài khoản', 'user')}
+      ${ri('explore', 'reader/index.html', 'Khám phá', 'home')}${ri('topics', 'reader/topics.html', 'Chủ đề', 'layers')}${ri('glossary', 'reader/glossary.html', 'Từ điển', 'book')}${ri('market', 'reader/market.html', 'Dữ liệu', 'chart')}${ri('inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread)}
+      <div class="r-sep"></div>${me ? ri('bookmarks', 'reader/bookmarks.html', 'Sổ tay', 'bookmark') + ri('notifications', 'reader/notifications.html', 'Thông báo', 'bell', unread) : ''}${ri('me', 'reader/account.html', me ? 'Tôi' : 'Tài khoản', 'user')}
       <div class="r-foot">${F.session().phase2 && !F.hasSub() ? `<a class="btn btn-soft btn-sm" href="${F.url('reader/pricing.html')}" title="FBV Premium">${I('crown')}<span class="r-label">Nâng cấp Premium</span></a>` : ''}
       ${me ? '' : `<a class="btn btn-primary btn-sm" href="${F.url('reader/login.html?next=' + encodeURIComponent(F.here()))}" title="Đăng nhập">${I('user')}<span class="r-label">Đăng nhập</span></a>`}</div>`;
 
@@ -71,7 +75,7 @@
     const left = m.root
       ? (m.brand ? `<a class="ab-brand m-only" href="${F.url('reader/index.html')}">${F.brandMark()}FBV</a><span class="ab-title big d-only">${m.title}</span>` : `<span class="ab-title big">${m.title}</span>`)
       : `${backBtn}<span class="ab-title" id="abTitle">${F.esc(m.title || '')}</span>`;
-    const search = m.root ? `<div class="ab-search search-box">${I('search')}<input class="input" id="abSearch" type="search" placeholder="Tìm báo cáo, chủ đề, chỉ số…" aria-label="Tìm kiếm"></div>` : '';
+    const search = m.root ? `<div class="ab-search search-box">${I('search')}<input class="input" id="abSearch" type="search" placeholder="Tra cứu chủ đề, khái niệm, chỉ số, tài liệu…" aria-label="Tìm kiếm"></div>` : '';
     bar.innerHTML = `${left}${m.root && m.brand ? '<span class="ab-spacer m-only"></span>' : ''}${search}${m.root ? '<span class="ab-spacer d-only"></span>' : ''}
       <div class="ab-actions" id="abActions"></div>
       <div class="ab-actions">${m.root && !m.noSearch && !m.auth ? `<a class="icon-btn ${m.root ? 'lt-desk' : ''}" href="${F.url('reader/search.html')}" aria-label="Tìm kiếm">${I('search')}</a>` : ''}
@@ -80,7 +84,7 @@
 
     /* ----- Tab bar (mobile) ----- */
     const tb = document.createElement('nav'); tb.className = 'tabbar'; tb.setAttribute('aria-label', 'Điều hướng chính');
-    const tabs = [['research', 'reader/index.html', 'Nghiên cứu', 'book'], ['market', 'reader/market.html', 'Thị trường', 'chart'], ['inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread], ['me', 'reader/account.html', 'Tôi', 'user', unread]];
+    const tabs = [['explore', 'reader/index.html', 'Khám phá', 'home'], ['topics', 'reader/topics.html', 'Chủ đề', 'layers'], ['data', 'reader/market.html', 'Dữ liệu', 'chart'], ['inquiries', 'reader/inquiries.html', 'Phản biện', 'message', inqUnread], ['me', 'reader/account.html', 'Tôi', 'user', unread]];
     tb.innerHTML = tabs.map((t) => `<a href="${F.url(t[1])}" class="${m.tab === t[0] ? 'active' : ''}" ${m.tab === t[0] ? 'aria-current="page"' : ''}>${I(t[3])}<span>${t[2]}</span>${t[4] ? `<span class="t-badge">${t[4]}</span>` : ''}</a>`).join('');
 
     /* ----- Footer (≥768) ----- */
@@ -105,7 +109,7 @@
     if (meBtn) meBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       F.dropdown(meBtn, `<div class="dd-head"><b>${F.esc(me.name)}</b><div class="xs muted">${F.esc(me.email)}</div>${F.hasSub() ? `<span class="badge premium mt-8">Premium</span>` : ''}</div><hr>
-        <a href="${F.url('reader/account.html')}">${I('user')}Trang cá nhân</a><a href="${F.url('reader/bookmarks.html')}">${I('bookmark')}Bài đã lưu</a><a href="${F.url('reader/inquiries.html')}">${I('message')}Phản biện của tôi</a>${F.session().phase2 ? `<a href="${F.url('reader/subscription.html')}">${I('crown')}Gói của tôi</a>` : ''}<a href="${F.url('reader/settings.html')}">${I('settings')}Cài đặt & Quyền riêng tư</a><hr><button id="ddLogout">${I('logout')}Đăng xuất</button>`);
+        <a href="${F.url('reader/account.html')}">${I('user')}Trang cá nhân</a><a href="${F.url('reader/bookmarks.html')}">${I('bookmark')}Sổ tay tri thức</a><a href="${F.url('reader/inquiries.html')}">${I('message')}Phản biện của tôi</a>${F.session().phase2 ? `<a href="${F.url('reader/subscription.html')}">${I('crown')}Gói của tôi</a>` : ''}<a href="${F.url('reader/settings.html')}">${I('settings')}Cài đặt & Quyền riêng tư</a><hr><button id="ddLogout">${I('logout')}Đăng xuất</button>`);
       $('#ddLogout').addEventListener('click', () => { F.logout(); sessionStorage.setItem('fbv-flash', 'Đã đăng xuất'); F.go('reader/index.html'); });
     });
     F.demoBar('reader');

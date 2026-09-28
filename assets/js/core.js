@@ -48,7 +48,7 @@
 
   /* ---------------- Session ---------------- */
   FBV.session = () => FBV.db().session;
-  FBV.me = () => { const s = FBV.session(); return s.uid ? FBV.user(s.uid) : null; };
+  FBV.me = () => { const s = FBV.session(); const u = s.uid ? FBV.user(s.uid) : null; if (u) ['bookmarks', 'follows', 'blocked', 'interests', 'followTopics', 'savedConcepts', 'highlights'].forEach((k) => { if (!Array.isArray(u[k])) u[k] = []; }); return u; };
   FBV.isMember = () => !!FBV.me();
   const CMS_ID = { expert: 'e1', reviewer: 's1', editor: 's2', admin: 's3' };
   FBV.ROLE_LABEL = { guest: 'Khách', member: 'Độc giả', expert: 'Chuyên gia', reviewer: 'Thẩm định viên', editor: 'Biên tập / Xuất bản', admin: 'Quản trị' };
@@ -77,6 +77,7 @@
       case 'moderate': return role === 'admin';
       case 'experts.manage': return role === 'admin';
       case 'indicators.manage': return role === 'admin';
+      case 'kb.manage': return ['editor', 'admin'].includes(role);
       case 'users.view': return role === 'admin';
       default: return false;
     }
@@ -375,9 +376,10 @@
       ['g', 'Tổng quan'], ['dashboard', 'cms/index.html', 'Dashboard', 'grid'],
       ['g', 'Nội dung'], ['reports', 'cms/reports.html', role === 'expert' ? 'Báo cáo của tôi' : 'Báo cáo', 'file', cnt.reports], ['editor', 'cms/editor.html', 'Soạn báo cáo mới', 'edit', 0, !FBV.can('report.create')],
       ['g', 'Tương tác'], ['inquiries', 'cms/inquiries.html', 'Phản biện 1:1', 'message', cnt.inquiries], ['moderation', 'cms/moderation.html', 'Kiểm duyệt vi phạm', 'flag', cnt.moderation, !['admin', 'editor'].includes(role)],
-      ['g', 'Dữ liệu & Hệ thống'], ['experts', 'cms/experts.html', 'Chuyên gia', 'shieldCheck'], ['indicators', 'cms/indicators.html', 'Danh mục chỉ số', 'database'], ['users', 'cms/users.html', 'Người dùng', 'users', 0, role !== 'admin']
+      ['g', 'Hệ tri thức'], ['topics', 'cms/topics.html', 'Cây chủ đề', 'layers'], ['glossary', 'cms/glossary.html', 'Thuật ngữ', 'book'], ['indicators', 'cms/indicators.html', 'Danh mục chỉ số', 'database'],
+      ['g', 'Hệ thống'], ['experts', 'cms/experts.html', 'Chuyên gia', 'shieldCheck'], ['users', 'cms/users.html', 'Người dùng', 'users', 0, role !== 'admin']
     ];
-    const side = `<aside class="cms-side">${FBV.brand(FBV.url('cms/index.html'), 'CMS Portal')}${items.map((it) => it[0] === 'g' ? `<div class="grp">${it[1]}</div>` : it[5] ? '' : `<a href="${FBV.url(it[1])}" class="${active === it[0] ? 'active' : ''}">${FBV.icon(it[3])}<span>${it[2]}</span>${it[4] ? `<span class="cnt">${it[4]}</span>` : ''}</a>`).join('')}
+    const side = `<aside class="cms-side">${FBV.brand(FBV.url('cms/index.html'), 'CMS Portal')}${items.filter(Boolean).map((it) => it[0] === 'g' ? `<div class="grp">${it[1]}</div>` : it[5] ? '' : `<a href="${FBV.url(it[1])}" class="${active === it[0] ? 'active' : ''}">${FBV.icon(it[3])}<span>${it[2]}</span>${it[4] ? `<span class="cnt">${it[4]}</span>` : ''}</a>`).join('')}
       <div class="me">${FBV.avatar(me, 'sm')}<div class="grow"><b>${FBV.esc(me.name)}</b><span>${FBV.ROLE_LABEL[role]}</span></div><a href="${FBV.url('cms/login.html?logout=1')}" title="Đăng xuất" style="color:#8FA3C0">${FBV.icon('logout').replace('<svg', '<svg style="width:18px;height:18px"')}</a></div></aside>`;
     const main = document.getElementById('app');
     const wrap = document.createElement('div'); wrap.className = 'cms';

@@ -39,7 +39,7 @@
 .rd .readbar{position:fixed;top:var(--appbar-h);left:var(--rail-w);height:3px;width:0;background:var(--primary);z-index:51;transition:width .1s}
 
 /* ---------- Tab bar (mobile) ---------- */
-.rd .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(4,1fr);height:calc(var(--tabbar-h) + var(--safe-b));padding-bottom:var(--safe-b);background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
+.rd .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:repeat(5,1fr);height:calc(var(--tabbar-h) + var(--safe-b));padding-bottom:var(--safe-b);background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
 .rd .tabbar a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--text-3);-webkit-tap-highlight-color:transparent}
 .rd .tabbar a:hover{text-decoration:none}
 .rd .tabbar a svg{width:24px;height:24px}
