@@ -14,6 +14,16 @@ Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu tron
 - Nút tròn **＋** cam để theo dõi khi onboarding, nút CTA dạng viên thuốc ở đáy màn hình.
 - Mobile-first, mở rộng dần: **≥ 768px** thanh icon bên trái · **≥ 1100px** sidebar đầy đủ · **≥ 1280px** cột phụ (thị trường, chuyên gia).
 
+## Cập nhật v3.1 (29/09/2026)
+
+- **Phân loại tài khoản:** Tài khoản thường / Chuyên gia. Người dùng nộp hồ sơ chuyên gia trên app (`reader/expert-apply.html`: thông tin, học vị, chứng chỉ, kinh nghiệm, cam kết) → FBV Review xác minh → Admin duyệt trong CMS (`cms/applications.html`, `cms/application.html`).
+- **Bài nghiên cứu:** đổi tên "Báo cáo/Bài viết" → "Bài nghiên cứu" (giữ "Báo cáo vi phạm").
+- **AI nhận diện & gắn tag + tham số:** trang bài chia **Phần 1 nội dung → Phần 2 biểu đồ & dữ liệu**, không chèn biểu đồ giữa đoạn. CMS chỉnh tham số biểu đồ (Đường/Cột, 1D–1Y/12 kỳ).
+- **Không gian làm việc** (`reader/workspace.html`, tab "Làm việc"): độc giả (theo dõi, ghim biểu đồ, ghi chú) · chuyên gia (bài nghiên cứu, hộp phản biện, hồ sơ).
+- **Nguồn dữ liệu:** chỉ số ghi nguồn "thu thập qua vnstock"; CMS Danh mục chỉ số có cột mapping hàm/nguồn/tần suất/đồng bộ.
+- Tham số URL demo: `?as=member|expert|u5` (đăng nhập nhanh), `?role=admin|editor|reviewer|expert` (vai trò CMS), `?p2=1` (Phase 2).
+- Tài liệu phân tích & kế hoạch: `FBV-v2\outputs\FBV_v3.1_PhanTich_KeHoach.md`.
+
 ## Phạm vi tính năng
 
 **MVP v1.0**
@@ -34,7 +44,7 @@ Mở `index.html` bằng trình duyệt, hoặc chạy web server tĩnh:
 python -m http.server 8080   # hoặc: npx serve .
 ```
 
-- `index.html` — **Hub**: danh mục màn hình (A01–A09, R01–R13, L01–L03, P00–P04, C01–C14) và 8 luồng demo F1–F8.
+- `index.html` — **Hub**: danh mục màn hình (A01–A11, W01–W02, R01–R13, L01–L03, P00–P04, C01–C16) và 10 luồng demo F1–F10.
 - **Nút Demo** (chấm vàng ở mép phải; trên desktop ở góc phải dưới): đổi vai trò Khách / Độc giả / Chuyên gia / Thẩm định viên / Biên tập / Quản trị, bật **Phase 2**, đổi giao diện sáng/tối, **Reset demo**.
 - Tài khoản demo: `minhanh@example.com` — mã OTP: 6 chữ số bất kỳ.
 - Thêm `?p2=1` vào URL bất kỳ để bật Phase 2.
@@ -56,6 +66,7 @@ assets/js/reader.js     Feed, tìm kiếm, trình đọc, PDF, chuyên gia, thư
 assets/js/market.js     Thị trường, vĩ mô & tiền tệ, chi tiết chỉ số
 assets/js/account.js    Đăng nhập, hồ sơ, cài đặt, phản biện, hoạt động, pháp lý, Phase 2
 assets/js/cms.js        CMS: dashboard, soạn thảo, thẩm định, AI linking, xuất bản, phản biện, kiểm duyệt
+assets/js/workspace.js  Không gian làm việc, đăng ký chuyên gia, ghi chú/theo dõi/ghim
 assets/js/hub.js        Hub + 404
 netlify.toml            Cấu hình deploy Netlify
 ```

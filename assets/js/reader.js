@@ -1,6 +1,6 @@
 /* =========================================================
    FBV v3 Prototype — READER
-   R01 Research Feed · R02 Tìm kiếm & lọc · R03 Trình đọc báo cáo (+ Paywall P2)
+   R01 Research Feed · R02 Tìm kiếm & lọc · R03 Trình đọc bài nghiên cứu (+ Paywall P2)
    R04 PDF Viewer · R05 Gửi phản biện (sheet) · R06 Hồ sơ chuyên gia · R07 Thư viện
    ========================================================= */
 (function () {
@@ -8,27 +8,44 @@
   const $ = F.$, $$ = F.$$; const I = F.icon;
 
   /* ---------- Blocks renderer (dùng chung Reader + CMS preview) ---------- */
+  /* ---------- Bố cục bài nghiên cứu: PHẦN 1 nội dung → PHẦN 2 biểu đồ (không đan xen) ---------- */
+  const figNo = (r) => { const m = {}; let n = 0; r.body.forEach((b, i) => { if (b.t === 'fig') m[i] = ++n; }); return m; };
   F.renderBlocks = (r, opts = {}) => {
-    const links = opts.widgets === false ? [] : F.linksOfReport(r.id);
+    const fn = figNo(r);
     const blocks = r.body.slice(opts.from || 0, opts.to == null ? r.body.length : opts.to);
     return blocks.map((b, k) => {
-      const i = k + (opts.from || 0); let h = '';
-      if (b.t === 'p') h = `<p data-b="${i}" id="p${i}">${F.esc(b.x)}</p>`;
-      else if (b.t === 'h') h = `<h2 data-b="${i}">${F.esc(b.x)}</h2>`;
-      else if (b.t === 'quote') h = `<blockquote data-b="${i}">${F.esc(b.x)}</blockquote>`;
-      else if (b.t === 'table') h = `<div class="tbl" data-b="${i}"><div class="fig-t">${F.esc(b.cap)}</div><div class="sx"><table><thead><tr>${b.head.map((x, j) => `<th class="${j ? 'r' : ''}">${F.esc(x)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((row) => `<tr>${row.map((x, j) => `<td class="${j ? 'r' : ''}">${F.esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="src">Nguồn: ${F.esc(b.src)}</div></div>`;
-      else if (b.t === 'fig') h = `<figure data-b="${i}"><div class="fig-t">${F.esc(b.title)}</div><div class="fig-chart" data-fig="${i}"></div><figcaption>Nguồn: ${F.esc(b.src)}</figcaption></figure>`;
-      return h + links.filter((l) => l.a === i).map((l) => F.indWidget(F.ind(l.i), l)).join('');
+      const i = k + (opts.from || 0);
+      if (b.t === 'p') return `<p data-b="${i}" id="p${i}">${F.esc(b.x)}</p>`;
+      if (b.t === 'h') return `<h2 data-b="${i}">${F.esc(b.x)}</h2>`;
+      if (b.t === 'quote') return `<blockquote data-b="${i}">${F.esc(b.x)}</blockquote>`;
+      if (b.t === 'table') return `<div class="tbl" data-b="${i}"><div class="fig-t">${F.esc(b.cap)}</div><div class="sx"><table><thead><tr>${b.head.map((x, j) => `<th class="${j ? 'r' : ''}">${F.esc(x)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((row) => `<tr>${row.map((x, j) => `<td class="${j ? 'r' : ''}">${F.esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="src">Nguồn: ${F.esc(b.src)}</div></div>`;
+      if (b.t === 'fig') return `<a class="fig-ref" data-b="${i}" id="ref-${fn[i]}" href="#hinh-${fn[i]}">${I('bars', 'i-sm')}<span>Xem <b>Hình ${fn[i]}</b> — ${F.esc(b.title)} ở phần Biểu đồ</span>${I('chevD', 'i-xs')}</a>`;
+      return '';
     }).join('');
   };
-  F.mountFigures = (r, root) => $$('.fig-chart', root).forEach((el) => { const b = r.body[+el.dataset.fig]; F.chart.bar(el, { labels: b.data.map((d) => d[0]), values: b.data.map((d) => d[1]), dec: b.data.some((d) => d[1] % 1) ? 2 : 0, showValues: true, axis: false, height: 210, highlightLast: true, suffix: b.unit === '%' ? '%' : ' ' + b.unit, label: b.title }); });
-  F.indWidget = (ind, l) => {
-    const ch = F.chg(ind); const macro = ind.group === 'macro';
-    return `<a class="iw" href="${F.url('reader/indicator.html?id=' + ind.id + '&from=' + l.r)}"><span class="ic">${I(macro ? 'bars' : 'chart')}</span>
-      <span class="t"><span class="ai">${I('sparkles')}${l.s === 'manual' ? 'Chỉ số liên quan · Biên tập viên thêm' : 'Chỉ số liên quan · Vertex AI gợi ý, đã kiểm duyệt'}</span><span class="nm" style="display:block">${F.esc(ind.name)}${macro ? ` <span class="faint" style="font-weight:500">· ${F.esc(ind.period)}</span>` : ''}</span>
-      <span class="vv"><span class="num">${F.fmtVal(ind)}</span><span class="chg-pill ${ch.d} num">${F.arrow(ch.c)} ${F.chgText(ind)}</span></span></span>
-      <span class="sp">${macro ? F.chart.sparkBars(ind.series.values) : ((v) => F.chart.spark(v, F.dir(v[v.length - 1] - v[0])))(F.series(ind, '1M').values)}</span></a>`;
+  const rangeLabel = { '1D': '1 ngày', '1W': '1 tuần', '1M': '1 tháng', '1Y': '1 năm', '12K': '12 kỳ gần nhất' };
+  // Phần 2: Biểu đồ & dữ liệu (hình của tác giả + chỉ số do AI nhận diện, theo tham số đã duyệt)
+  F.chartSection = (r, opts = {}) => {
+    const fn = figNo(r); const links = F.linksOfReport(r.id);
+    const figs = r.body.map((b, i) => (b.t === 'fig' ? [b, i] : null)).filter(Boolean);
+    if (!figs.length && !links.length) return '';
+    return `<section class="chart-sec" id="bieu-do"><div class="cs-head"><span class="cs-k">Phần 2</span><h2>Biểu đồ & dữ liệu</h2><p>Tách riêng khỏi nội dung để đọc liền mạch. ${links.length ? 'Chỉ số do Vertex AI nhận diện từ nội dung, đã được biên tập viên duyệt.' : ''}</p></div>
+      ${figs.map(([b, i]) => `<figure class="cc" id="hinh-${fn[i]}"><div class="cc-h"><span class="cc-n">Hình ${fn[i]}</span><span class="cc-t">${F.esc(b.title)}</span></div><div class="cc-chart" data-fig="${i}"></div><figcaption>Nguồn: ${F.esc(b.src)} · <a href="#ref-${fn[i]}" class="link">Về đoạn liên quan</a></figcaption></figure>`).join('')}
+      ${links.map((l) => { const ind = F.ind(l.i); const ch = F.chg(ind); const p = l.p || {}; return `<div class="cc ai"><div class="cc-h"><span class="cc-ai">${I('sparkles', 'i-xs')}${l.s === 'manual' ? 'Biên tập viên thêm' : 'AI nhận diện · ' + Math.round(l.c * 100) + '%'}</span><a class="cc-go" href="${F.url('reader/indicator.html?id=' + ind.id + '&from=' + r.id)}">Chi tiết ${I('chevR', 'i-xs')}</a></div>
+        <div class="cc-q"><div><div class="cc-t">${F.esc(ind.name)}</div><div class="cc-v"><b class="num">${F.fmtVal(ind)}</b><span class="chg-pill ${ch.d} num">${F.arrow(ch.c)} ${F.chgText(ind)}</span></div></div></div>
+        <div class="cc-chart" data-ind="${ind.id}" data-chart="${p.chart || 'line'}" data-range="${p.range || '1M'}"></div>
+        <div class="cc-p"><span class="tag">#${ind.id}</span><span class="tag">${p.chart === 'bar' ? 'Cột' : 'Đường'} · ${rangeLabel[p.range] || p.range}</span><span class="faint">${F.esc(ind.vn ? 'Nguồn: ' + ind.source + ' · qua vnstock' : ind.source)}</span></div></div>`; }).join('')}
+    </section>`;
   };
+  F.mountCharts = (r, root) => {
+    $$('.cc-chart[data-fig]', root).forEach((el) => { const b = r.body[+el.dataset.fig]; F.chart.bar(el, { labels: b.data.map((d) => d[0]), values: b.data.map((d) => d[1]), dec: b.data.some((d) => d[1] % 1) ? 2 : 0, showValues: true, axis: false, height: 210, highlightLast: true, suffix: b.unit === '%' ? '%' : ' ' + b.unit, label: b.title }); });
+    $$('.cc-chart[data-ind]', root).forEach((el) => { const ind = F.ind(el.dataset.ind); const macro = ind.group === 'macro';
+      if (macro || el.dataset.chart === 'bar') { const s = macro ? ind.series : F.series(ind, el.dataset.range); F.chart.bar(el, { labels: s.labels, values: s.values, dec: ind.dec, height: 170, highlightLast: true, mode: s.values.some((x) => x < 0) ? 'posneg' : '', label: ind.name }); }
+      else { const s = F.series(ind, el.dataset.range || '1M'); F.chart.line(el, { labels: s.labels, values: s.values, dec: ind.dec, height: 170, label: ind.name }); } });
+  };
+  F.mountFigures = F.mountCharts;
+  F.aiTagsRow = (r) => { const links = F.linksOfReport(r.id); const tags = (r.aiTags || r.tags.map((t) => ({ k: t }))); return `<div class="ai-tags"><div class="at-h">${I('sparkles', 'i-xs')}Thẻ do AI nhận diện</div><div class="chips" style="flex-wrap:wrap">${tags.map((t) => `<a class="chip" href="${F.url('reader/search.html?q=' + encodeURIComponent(t.k))}">#${F.esc(t.k)}</a>`).join('')}${links.map((l) => `<a class="chip ind" href="${F.url('reader/indicator.html?id=' + l.i + '&from=' + r.id)}">${I('chart', 'i-xs')}${F.esc(F.shortName(F.ind(l.i)))}</a>`).join('')}</div></div>`; };
+  F.indWidget = () => '';
 
   /* ---------- Quota & gửi phản biện ---------- */
   const quotaInfo = () => {
@@ -87,10 +104,10 @@
       const mk = ['VNINDEX', 'VN30', 'HNX', 'UPCOM', 'USDVND', 'GOLD', 'BRENT', 'ON_RATE'];
       let html = '';
       if (s === 'all') {
-        if (!me) html += `<div style="padding:12px var(--gutter) 4px"><div class="note accent">${I('user')}<span class="grow">Bạn đang ở <b>chế độ Khách</b>: xem báo cáo và biểu đồ thị trường tự do. Đăng nhập để lưu bài, theo dõi chuyên gia và gửi phản biện.</span></div></div>`;
+        if (!me) html += `<div style="padding:12px var(--gutter) 4px"><div class="note accent">${I('user')}<span class="grow">Bạn đang ở <b>chế độ Khách</b>: xem bài nghiên cứu và biểu đồ thị trường tự do. Đăng nhập để lưu bài, theo dõi chuyên gia và gửi phản biện.</span></div></div>`;
         html += `<div class="sec"><h2>Thị trường hôm nay</h2><a href="${F.url('reader/market.html')}">Xem tất cả</a></div><div class="mstrip">${mk.map((id) => F.mcard(F.ind(id))).join('')}</div><div class="delay-note">${I('clock')}Dữ liệu trễ 15 phút · minh họa</div><div class="divider" style="margin-top:14px"></div>`;
       }
-      if (!list.length) html += s === 'following' ? F.empty('users', 'Chưa có bài từ chuyên gia bạn theo dõi', 'Theo dõi chuyên gia để thấy báo cáo mới của họ tại đây.', `<a class="btn btn-primary" href="${F.url('reader/search.html')}">Khám phá chuyên gia</a>`) : F.empty('file', 'Chưa có báo cáo', 'Luồng này chưa có báo cáo mới.');
+      if (!list.length) html += s === 'following' ? F.empty('users', 'Chưa có bài nghiên cứu từ chuyên gia bạn theo dõi', 'Theo dõi chuyên gia để thấy bài nghiên cứu mới của họ tại đây.', `<a class="btn btn-primary" href="${F.url('reader/search.html')}">Khám phá chuyên gia</a>`) : F.empty('file', 'Chưa có bài nghiên cứu', 'Luồng này chưa có bài nghiên cứu mới.');
       list.forEach((r, i) => {
         html += F.post(r);
         if (i === 2 && s === 'all') html += `<div class="sec"><h2>Chuyên gia FBV</h2><p>Verified by FBV</p></div><div class="ecards">${F.db().experts.map(F.ecard).join('')}</div><div class="divider" style="margin-top:14px"></div>`;
@@ -105,7 +122,7 @@
   F.norm = norm;
   pages.search = () => {
     const v = F.shell({ tab: null, side: 'search', bar: 'back', left: '', notab: false, title: '' });
-    const ab = $('#ab'); ab.innerHTML = `<label class="search-field">${I('search')}<input id="q" type="search" placeholder="Tìm báo cáo, chuyên gia, chỉ số…" autocomplete="off" value="${F.esc(F.param('q') || '')}"></label><button class="txt-btn acc" id="cancel">Hủy</button>`;
+    const ab = $('#ab'); ab.innerHTML = `<label class="search-field">${I('search')}<input id="q" type="search" placeholder="Tìm bài nghiên cứu, chuyên gia, chỉ số…" autocomplete="off" value="${F.esc(F.param('q') || '')}"></label><button class="txt-btn acc" id="cancel">Hủy</button>`;
     ab.style.gap = '8px'; ab.style.padding = '0 12px 0 16px';
     $('#cancel').onclick = () => F.back('reader/index.html');
     document.title = 'Tìm kiếm · FBV';
@@ -141,7 +158,7 @@
       const inds = nq ? F.db().indicators.filter((i) => norm(i.name + ' ' + i.id + ' ' + i.syn.join(' ')).includes(nq)).slice(0, 4) : [];
       $('#res').innerHTML = `${ex.length ? `<div class="sec"><h2>Chuyên gia</h2></div>${ex.map((e) => F.erow(e)).join('')}` : ''}
         ${inds.length ? `<div class="sec"><h2>Chỉ số</h2></div><div style="padding:4px var(--gutter)"><div class="group">${inds.map((i) => F.irow(i)).join('')}</div></div>` : ''}
-        <div class="sec"><h2>Báo cáo</h2><p>${list.length} kết quả</p></div>${list.length ? list.map((x) => F.postCompact(x.r)).join('') : F.empty('search', 'Không tìm thấy báo cáo', 'Thử từ khóa khác hoặc bỏ bớt bộ lọc.')}`;
+        <div class="sec"><h2>Bài nghiên cứu</h2><p>${list.length} kết quả</p></div>${list.length ? list.map((x) => F.postCompact(x.r)).join('') : F.empty('search', 'Không tìm thấy bài nghiên cứu', 'Thử từ khóa khác hoặc bỏ bớt bộ lọc.')}`;
     };
     let t; $('#q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(drawR, 150); });
     $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { pushRecent($('#q').value.trim()); $('#q').blur(); } });
@@ -149,7 +166,7 @@
     if (!F.param('q') && window.innerWidth >= 768) $('#q').focus();
   };
 
-  /* ================= R03 · Trình đọc báo cáo ================= */
+  /* ================= R03 · Trình đọc bài nghiên cứu ================= */
   pages.report = () => {
     const r = F.report(F.param('id')) || F.published()[0]; const e = F.expert(r.author); const me = F.me();
     const nid = F.param('n'); if (nid && me) { const n = F.db().notifications.find((x) => x.id === nid); if (n) { n.read = true; F.save(); } }
@@ -169,11 +186,11 @@
       <div class="summary"><h4>Tóm tắt điều hành</h4><ul>${r.summary.map((x) => `<li>${F.esc(x)}</li>`).join('')}</ul></div>
       ${locked ? `<div class="paywall"><div class="prose fade">${F.renderBlocks(r, { to: cut + 2, widgets: false })}</div>
         <div class="pw-card"><div class="ic">${I('lock')}</div><h3>Nội dung chuyên sâu dành cho hội viên Premium</h3><p>Bạn đang xem bản tóm tắt. Nâng cấp để đọc toàn văn, bảng số liệu, bản PDF và phản biện 1:1 không giới hạn.</p>
-          <div class="stack"><a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/pricing.html?r=' + r.id)}">Nâng cấp Premium</a><a class="btn btn-gray btn-block" href="${F.url('reader/checkout.html?plan=single&r=' + r.id)}">Mở khóa riêng báo cáo này · ${F.num(79000)}đ</a><button class="btn-text" id="restore" style="margin:4px auto 0">Khôi phục giao dịch</button></div></div></div>`
-        : `<div class="prose" id="prose">${F.renderBlocks(r)}</div>`}
-      <div class="tags-row">${r.tags.map((t) => `<a class="chip" href="${F.url('reader/search.html?q=' + encodeURIComponent(t))}">${F.esc(t)}</a>`).join('')}</div>
+          <div class="stack"><a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/pricing.html?r=' + r.id)}">Nâng cấp Premium</a><a class="btn btn-gray btn-block" href="${F.url('reader/checkout.html?plan=single&r=' + r.id)}">Mở khóa riêng bài nghiên cứu này · ${F.num(79000)}đ</a><button class="btn-text" id="restore" style="margin:4px auto 0">Khôi phục giao dịch</button></div></div></div>`
+        : `<div class="part-k">Phần 1 · Nội dung</div><div class="prose" id="prose">${F.renderBlocks(r)}</div>`}
+      ${F.aiTagsRow(r)}
+      ${locked ? '' : F.chartSection(r)}
       ${F.disclaimer()}
-      ${links.length ? `<div class="sec" style="padding-left:0;padding-right:0"><h2>Chỉ số trong bài</h2><p>${I('sparkles', 'i-xs')}</p></div><div class="group">${links.map((l) => F.irow(F.ind(l.i))).join('')}</div><p class="hint mt-8">Liên kết do Google Vertex AI gợi ý tại thời điểm xuất bản và được biên tập viên FBV kiểm duyệt.</p>` : ''}
       <div id="phan-bien" class="sec" style="padding-left:0;padding-right:0"><h2>Phản biện 1:1</h2></div>
       <div class="panel"><div class="row top"><span class="ib" style="width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center;flex:none">${I('quote', 'i-sm')}</span><div class="grow"><b>Bôi đen một đoạn hoặc số liệu bất kỳ</b><p class="muted small mt-4">để gửi câu hỏi phản biện riêng tới ${F.esc(e.name)}. Trao đổi kín, không công khai.</p></div></div>
         ${myQ.length ? `<div class="menu-list mt-12">${myQ.map((q) => `<a href="${F.url('reader/inquiry.html?id=' + q.id)}">${I('chat')}<span class="grow ellipsis">“${F.esc(q.quote)}”</span>${F.iStatusBadge(q.status)}</a>`).join('')}</div>` : ''}
@@ -183,13 +200,14 @@
       ${related.length ? `<div class="sec" style="padding-left:0;padding-right:0"><h2>Đọc tiếp trong ${F.STREAM_S[r.stream]}</h2></div><div style="margin:0 calc(-1 * var(--gutter))">${related.map((x) => F.postCompact(x)).join('')}</div>` : ''}
     </article>
     <div class="actbar"><div class="inner"><button class="btn btn-primary" id="askBtn">${I('quote')}<span class="lbl">Trích dẫn & phản biện</span></button>${r.pdf ? `<a class="icon-btn" href="${F.url('reader/report-pdf.html?id=' + r.id)}" aria-label="Xem PDF">${I('pdf')}</a>` : ''}<button class="icon-btn ${saved ? 'on' : ''}" data-bm="${r.id}" id="bm" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div></div>`;
-    if (!locked) F.mountFigures(r, $('#prose'));
+    if (!locked) F.mountCharts(r, $('#bieu-do') || document);
     const rs = $('#restore'); if (rs) rs.onclick = () => { F.toast('Không tìm thấy giao dịch trước đó cho tài khoản này', 'info'); };
     const askWhole = () => { if (locked) { F.go('reader/pricing.html?r=' + r.id); return; } F.openInquiry(r, r.summary[0], 0); };
     $('#askAll').onclick = askWhole;
     $('#askBtn').onclick = () => { const sel = String(window.getSelection() || '').trim(); if (sel.length > 8 && !locked) { const b = selBlock(); F.openInquiry(r, sel.slice(0, 400), b); } else if (locked) F.go('reader/pricing.html?r=' + r.id); else F.toast('Bôi đen một đoạn trong bài để trích dẫn, hoặc dùng “Đặt câu hỏi về toàn bài”.', 'info'); };
     $('#more').onclick = () => F.menu([
       r.pdf ? { icon: 'pdf', label: 'Mở bản PDF', onClick: () => F.go('reader/report-pdf.html?id=' + r.id) } : null,
+      { icon: 'stickyNote', label: 'Thêm ghi chú vào Không gian làm việc', onClick: () => F.addNote(r, '') },
       { icon: 'link', label: 'Sao chép liên kết', onClick: () => { try { navigator.clipboard.writeText(location.href); } catch (x) {} F.toast('Đã sao chép liên kết'); } },
       { icon: 'user', label: 'Xem hồ sơ tác giả', onClick: () => F.go('reader/expert.html?id=' + e.id) },
       { icon: 'flag', label: 'Báo cáo nội dung', danger: true, onClick: () => F.toast('Đã gửi phản ánh tới ban biên tập FBV', 'info') }
@@ -204,11 +222,12 @@
       const s = window.getSelection(); const txt = String(s || '').trim(); const prose = $('#prose');
       if (!prose || !s.rangeCount || txt.length < 8 || !prose.contains(s.anchorNode)) { hide(); return; }
       hide(); pop = document.createElement('div'); pop.className = 'sel-pop';
-      pop.innerHTML = `<button data-q>${I('quote')}Trích dẫn & phản biện</button><button data-c>${I('copy')}Sao chép</button>`;
+      pop.innerHTML = `<button data-q>${I('quote')}Phản biện</button><button data-n>${I('stickyNote')}Ghi chú</button><button data-c>${I('copy')}Sao chép</button>`;
       if (window.innerWidth < 768) { pop.classList.add('fixed'); document.body.appendChild(pop); }
       else { const rc = s.getRangeAt(0).getBoundingClientRect(); pop.style.left = rc.left + rc.width / 2 + window.scrollX + 'px'; pop.style.top = rc.top + window.scrollY - 10 + 'px'; document.body.appendChild(pop); }
       pop.addEventListener('mousedown', (x) => x.preventDefault());
       $('[data-q]', pop).onclick = () => { const b = selBlock(); hide(); F.openInquiry(r, txt.slice(0, 400), b); };
+      $('[data-n]', pop).onclick = () => { hide(); F.addNote(r, txt.slice(0, 400)); };
       $('[data-c]', pop).onclick = () => { try { navigator.clipboard.writeText(txt); } catch (x) {} hide(); F.toast('Đã sao chép trích dẫn'); };
     };
     document.addEventListener('mouseup', () => setTimeout(show, 10));
@@ -221,7 +240,7 @@
   pages.reportPdf = () => {
     const r = F.report(F.param('id')) || F.published()[0];
     const v = F.shell({ bar: 'back', back: 'reader/report.html?id=' + r.id, notab: true, title: 'Bản PDF', right: F.isLocked(r) ? '' : `<a class="icon-btn" href="${F.url('assets/media/sample-report.pdf')}" download="FBV-${r.id}.pdf" aria-label="Tải xuống">${I('download')}</a><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button>` });
-    if (F.isLocked(r)) { v.innerHTML = F.empty('lock', 'Bản PDF dành cho hội viên Premium', 'Nâng cấp để đọc và tải bản PDF đầy đủ của báo cáo.', `<a class="btn btn-primary" href="${F.url('reader/pricing.html?r=' + r.id)}">Xem gói Premium</a>`); return; }
+    if (F.isLocked(r)) { v.innerHTML = F.empty('lock', 'Bản PDF dành cho hội viên Premium', 'Nâng cấp để đọc và tải bản PDF đầy đủ của bài nghiên cứu.', `<a class="btn btn-primary" href="${F.url('reader/pricing.html?r=' + r.id)}">Xem gói Premium</a>`); return; }
     let z = 100;
     v.innerHTML = `<div class="pdfv"><div class="pdf-tools"><span class="grow ellipsis"><b style="color:var(--text)">${F.esc(r.title)}</b></span><button class="icon-btn sm" id="zo" aria-label="Thu nhỏ">${I('zoomOut')}</button><span class="num" id="zv" style="min-width:44px;text-align:center">100%</span><button class="icon-btn sm" id="zi" aria-label="Phóng to">${I('zoomIn')}</button></div>
       <div class="pdf-frame"><object id="pdfo" data="${F.url('assets/media/sample-report.pdf')}#zoom=100" type="application/pdf"><div class="pdf-fallback">${F.empty('pdf', 'Trình duyệt không hiển thị PDF nhúng', 'Trên ứng dụng di động, PDF mở bằng trình xem gốc (Native PDF Viewer) với cử chỉ phóng to, tìm kiếm và mục lục.', `<a class="btn btn-primary" href="${F.url('assets/media/sample-report.pdf')}" target="_blank">Mở PDF</a>`)}</div></object></div></div>`;
@@ -238,19 +257,23 @@
     let tab = 'posts';
     v.innerHTML = `<div class="prof"><div class="prof-top"><div class="t"><h1>${F.esc(e.name)}</h1><div class="h">${F.esc(e.title)}</div></div>${F.avatar(e, 'xl')}</div>
       <div class="meta">${e.verified ? `<span class="verified-pill">${F.vb(e)}Verified by FBV</span>` : `<span class="tag warn">${I('clock', 'i-xs')}Đang chờ FBV thẩm định</span>`}<span>${F.esc(e.org)}</span></div>
+      <div class="cred-line">${(e.degrees || []).slice(0, 1).map((d) => `<span class="tag">${I('cap', 'i-xs')}${F.esc(d.name)}</span>`).join('')}${(e.certs || []).map((c) => `<span class="tag info">${I('award', 'i-xs')}${F.esc(c.name)}</span>`).join('')}</div>
       <p class="bio">${F.esc(e.bio)}</p>
-      <div class="stats-row"><div><b class="num">${list.length}</b><span>Báo cáo</span></div><div><b class="num">${F.compact(F.followers(e.id))}</b><span>Người theo dõi</span></div><div><b class="num">${answered}</b><span>Phản biện đã trả lời</span></div></div>
+      <div class="stats-row"><div><b class="num">${list.length}</b><span>Bài nghiên cứu</span></div><div><b class="num">${F.compact(F.followers(e.id))}</b><span>Người theo dõi</span></div><div><b class="num">${answered}</b><span>Phản biện đã trả lời</span></div></div>
       <div class="btns">${F.followBtn(e, 'btn')}<button class="btn btn-gray" id="shareP">${I('share')}Chia sẻ</button></div></div>
       <div class="utabs mt-16" id="tb"></div><div id="tv"></div>`;
     const draw = () => {
-      $('#tb').innerHTML = [['posts', 'Báo cáo', list.length], ['about', 'Giới thiệu']].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}${t[2] != null ? `<span class="cnt">${t[2]}</span>` : ''}</button>`).join('');
+      $('#tb').innerHTML = [['posts', 'Bài nghiên cứu', list.length], ['about', 'Giới thiệu']].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}${t[2] != null ? `<span class="cnt">${t[2]}</span>` : ''}</button>`).join('');
       $$('#tb [data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));
-      $('#tv').innerHTML = tab === 'posts' ? (list.length ? list.map((r) => F.postCompact(r)).join('') : F.empty('file', 'Chưa có báo cáo', 'Chuyên gia chưa xuất bản báo cáo nào.'))
+      $('#tv').innerHTML = tab === 'posts' ? (list.length ? list.map((r) => F.postCompact(r)).join('') : F.empty('file', 'Chưa có bài nghiên cứu', 'Chuyên gia chưa xuất bản bài nghiên cứu nào.'))
         : `<div class="page mt-16"><div class="groups"><div><div class="group-title">Thông tin</div><div class="group plain">
           <div class="gi noicon"><span class="gl">Lĩnh vực</span><span class="gv">${e.fields.map((f) => F.STREAM_S[f]).join(', ')}</span></div>
           <div class="gi noicon"><span class="gl">Đơn vị</span><span class="gv">${F.esc(e.org)}</span></div>
           <div class="gi noicon"><span class="gl">Chức danh</span><span class="gv">${F.esc(e.title)}</span></div></div></div>
-          <div><div class="group-title">Chứng thực</div><div class="note ${e.verified ? 'accent' : 'warn'}">${I(e.verified ? 'shieldCheck' : 'clock')}<span>${e.verified ? '<b>Verified by FBV</b> — Danh tính, học vị và kinh nghiệm chuyên môn đã được Hội đồng FBV Review thẩm định. Mọi báo cáo của chuyên gia đều qua quy trình thẩm định học thuật 3 bước.' : 'Hồ sơ đang được Hội đồng FBV Review thẩm định. Huy hiệu sẽ hiển thị sau khi hoàn tất.'}</span></div></div></div></div>`;
+          <div><div class="group-title">Học vị & bằng cấp</div><div class="group">${(e.degrees || []).map((d) => `<div class="gi"><div class="cred"><span class="ic">${I('cap')}</span><div><b>${F.esc(d.name)}</b><small>${F.esc(d.school)} · ${d.year}</small>${d.verified ? `<span class="ok">${I('checkCircle')}FBV đã xác minh</span>` : ''}</div></div></div>`).join('') || '<div class="gi noicon"><span class="gl muted">Chưa cập nhật</span></div>'}</div></div>
+          <div><div class="group-title">Chứng chỉ chuyên môn</div><div class="group">${(e.certs || []).map((c) => `<div class="gi"><div class="cred"><span class="ic">${I('award')}</span><div><b>${F.esc(c.name)}</b><small>${F.esc(c.issuer)}${c.no && c.no !== '—' ? ' · Số ' + F.esc(c.no) : ''} · ${c.year}</small>${c.verified ? `<span class="ok">${I('checkCircle')}FBV đã xác minh</span>` : ''}</div></div></div>`).join('') || '<div class="gi noicon"><span class="gl muted" style="font-weight:500">Không khai báo chứng chỉ</span></div>'}</div></div>
+          <div><div class="group-title">Kinh nghiệm</div><div class="group plain">${(e.exp || []).map((x) => `<div class="gi noicon"><span class="gl">${F.esc(x.role)}<small>${F.esc(x.org)}</small></span><span class="gv">${F.esc(x.time)}</span></div>`).join('')}</div></div>
+          <div><div class="group-title">Chứng thực</div><div class="note ${e.verified ? 'accent' : 'warn'}">${I(e.verified ? 'shieldCheck' : 'clock')}<span>${e.verified ? '<b>Verified by FBV</b> — Danh tính, học vị và kinh nghiệm chuyên môn đã được Hội đồng FBV Review thẩm định. Mọi bài nghiên cứu của chuyên gia đều qua quy trình thẩm định học thuật 3 bước.' : 'Hồ sơ đang được Hội đồng FBV Review thẩm định. Huy hiệu sẽ hiển thị sau khi hoàn tất.'}</span></div></div></div></div>`;
     };
     draw();
     $('#shareP').onclick = () => F.shareSheet(e.name, location.href);
@@ -262,20 +285,20 @@
 
   /* ================= R07 · Thư viện (Đã lưu · Đang theo dõi · Đã đọc) ================= */
   pages.bookmarks = () => {
-    const v = F.shell({ tab: 'library', bar: 'root', rootTitle: '' });
+    const v = F.shell({ tab: 'workspace', side: 'library', bar: 'back', back: 'reader/workspace.html', title: '' });
     const me = F.me();
     v.innerHTML = `<h1 class="large-title">Thư viện</h1><div id="lib"></div>`;
-    if (!me) { $('#lib').innerHTML = F.gate('bookmark', 'Lưu báo cáo để đọc sau', 'Đăng nhập để lưu báo cáo, theo dõi chuyên gia và đồng bộ lịch sử đọc trên mọi thiết bị.'); return; }
+    if (!me) { $('#lib').innerHTML = F.gate('bookmark', 'Lưu bài nghiên cứu để đọc sau', 'Đăng nhập để lưu bài nghiên cứu, theo dõi chuyên gia và đồng bộ lịch sử đọc trên mọi thiết bị.'); return; }
     let tab = F.param('t') || 'saved';
     const draw = () => {
       const saved = me.bookmarks.map(F.report).filter(Boolean); const fol = me.follows.map(F.expert).filter(Boolean); const hist = me.history.map(F.report).filter(Boolean);
       $('#lib').innerHTML = `<div class="utabs" id="tb">${[['saved', 'Đã lưu', saved.length], ['following', 'Đang theo dõi', fol.length], ['history', 'Đã đọc', hist.length]].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}<span class="cnt">${t[2]}</span></button>`).join('')}</div><div id="tv"></div>`;
       $$('#tb [data-t]').forEach((b) => (b.onclick = () => { tab = b.dataset.t; history.replaceState(null, '', '?t=' + tab); draw(); }));
       const tv = $('#tv');
-      if (tab === 'saved') tv.innerHTML = saved.length ? saved.map((r) => F.postCompact(r)).join('') : F.empty('bookmark', 'Chưa có báo cáo đã lưu', 'Nhấn biểu tượng lưu trên báo cáo để đọc lại sau.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Khám phá báo cáo</a>`);
-      else if (tab === 'following') tv.innerHTML = (fol.length ? fol.map((e) => F.erow(e)).join('') : F.empty('users', 'Bạn chưa theo dõi chuyên gia nào', 'Theo dõi để nhận thông báo khi chuyên gia xuất bản báo cáo mới.')) + `<div class="sec"><h2>Gợi ý cho bạn</h2></div>${F.db().experts.filter((e) => !me.follows.includes(e.id)).map((e) => F.erow(e)).join('')}`;
-      else tv.innerHTML = hist.length ? hist.map((r) => F.postCompact(r, { date: 'ago' })).join('') + `<div class="page mt-16"><button class="btn btn-gray btn-block" id="clh">Xóa lịch sử đọc</button></div>` : F.empty('history', 'Chưa có lịch sử đọc', 'Các báo cáo bạn mở sẽ xuất hiện tại đây.');
-      const c = $('#clh'); if (c) c.onclick = () => F.confirm('Xóa lịch sử đọc?', 'Danh sách báo cáo đã đọc sẽ bị xóa khỏi tài khoản.', 'Xóa', 'btn-danger', () => { me.history = []; F.save(); draw(); F.toast('Đã xóa lịch sử đọc'); });
+      if (tab === 'saved') tv.innerHTML = saved.length ? saved.map((r) => F.postCompact(r)).join('') : F.empty('bookmark', 'Chưa có bài nghiên cứu đã lưu', 'Nhấn biểu tượng lưu trên bài nghiên cứu để đọc lại sau.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Khám phá bài nghiên cứu</a>`);
+      else if (tab === 'following') tv.innerHTML = (fol.length ? fol.map((e) => F.erow(e)).join('') : F.empty('users', 'Bạn chưa theo dõi chuyên gia nào', 'Theo dõi để nhận thông báo khi chuyên gia xuất bản bài nghiên cứu mới.')) + `<div class="sec"><h2>Gợi ý cho bạn</h2></div>${F.db().experts.filter((e) => !me.follows.includes(e.id)).map((e) => F.erow(e)).join('')}`;
+      else tv.innerHTML = hist.length ? hist.map((r) => F.postCompact(r, { date: 'ago' })).join('') + `<div class="page mt-16"><button class="btn btn-gray btn-block" id="clh">Xóa lịch sử đọc</button></div>` : F.empty('history', 'Chưa có lịch sử đọc', 'Các bài nghiên cứu bạn mở sẽ xuất hiện tại đây.');
+      const c = $('#clh'); if (c) c.onclick = () => F.confirm('Xóa lịch sử đọc?', 'Danh sách bài nghiên cứu đã đọc sẽ bị xóa khỏi tài khoản.', 'Xóa', 'btn-danger', () => { me.history = []; F.save(); draw(); F.toast('Đã xóa lịch sử đọc'); });
     };
     draw();
   };

@@ -9,7 +9,7 @@
 
   const TABS = [
     ['home', 'reader/index.html', 'Trang chủ', 'home'],
-    ['library', 'reader/bookmarks.html', 'Thư viện', 'read'],
+    ['workspace', 'reader/workspace.html', 'Làm việc', 'briefcase'],
     ['market', 'reader/market.html', 'Thị trường', 'market'],
     ['chat', 'reader/inquiries.html', 'Phản biện', 'chat'],
     ['activity', 'reader/notifications.html', 'Hoạt động', 'bell']
@@ -36,6 +36,7 @@
     const sideItems = [
       ['home', 'reader/index.html', 'Trang chủ', 'home'],
       ['search', 'reader/search.html', 'Tìm kiếm', 'search'],
+      ['workspace', 'reader/workspace.html', 'Làm việc của tôi', 'briefcase'],
       ['library', 'reader/bookmarks.html', 'Thư viện', 'read'],
       ['market', 'reader/market.html', 'Thị trường', 'market'],
       ['macro', 'reader/macro.html', 'Vĩ mô & Tiền tệ', 'globe'],
@@ -80,20 +81,20 @@
   F.isSaved = (rid) => { const me = F.me(); return !!me && me.bookmarks.includes(rid); };
   F.followBtn = (e, cls = 'btn btn-sm') => { const on = F.isFollow(e.id); return `<button class="${cls} ${on ? 'btn-gray' : 'btn-primary'}" data-follow="${e.id}">${on ? 'Đang theo dõi' : 'Theo dõi'}</button>`; };
   F.toggleFollow = (eid) => {
-    if (!F.requireAuth('Đăng nhập để theo dõi chuyên gia và nhận thông báo khi có báo cáo mới.')) return null;
+    if (!F.requireAuth('Đăng nhập để theo dõi chuyên gia và nhận thông báo khi có bài nghiên cứu mới.')) return null;
     const me = F.me(); const i = me.follows.indexOf(eid); if (i > -1) me.follows.splice(i, 1); else me.follows.push(eid); F.save();
     const on = i < 0; F.toast(on ? 'Đã theo dõi ' + F.expert(eid).name : 'Đã bỏ theo dõi', on ? 'success' : 'info'); return on;
   };
   F.toggleSave = (rid) => {
-    if (!F.requireAuth('Đăng nhập để lưu báo cáo và đọc lại trên mọi thiết bị.')) return null;
+    if (!F.requireAuth('Đăng nhập để lưu bài nghiên cứu và đọc lại trên mọi thiết bị.')) return null;
     const me = F.me(); const i = me.bookmarks.indexOf(rid); if (i > -1) me.bookmarks.splice(i, 1); else me.bookmarks.unshift(rid); F.save();
     const on = i < 0; F.toast(on ? 'Đã lưu vào Thư viện' : 'Đã bỏ lưu', on ? 'success' : 'info'); return on;
   };
   F.shareSheet = (title, url) => F.modal({
-    title: 'Chia sẻ báo cáo',
+    title: 'Chia sẻ bài nghiên cứu',
     body: `<div class="stack"><p class="muted small clamp2">${F.esc(title)}</p><div class="row"><input class="input grow" id="shu" value="${F.esc(url)}" readonly aria-label="Liên kết"><button class="btn btn-primary" id="cpy">${I('copy')}Sao chép</button></div>
       <div class="chips">${['Facebook', 'LinkedIn', 'Zalo', 'Email', 'Tin nhắn'].map((n) => `<button class="chip" data-n="${n}">${n}</button>`).join('')}</div>
-      <p class="hint">Liên kết mở trang web báo cáo (có ảnh xem trước). Trên điện thoại đã cài app, liên kết mở thẳng trong ứng dụng FBV.</p></div>`,
+      <p class="hint">Liên kết mở trang web bài nghiên cứu (có ảnh xem trước). Trên điện thoại đã cài app, liên kết mở thẳng trong ứng dụng FBV.</p></div>`,
     onOpen: (el) => { $('#cpy', el).onclick = () => { try { navigator.clipboard.writeText(url); } catch (e) {} F.toast('Đã sao chép liên kết'); }; $$('[data-n]', el).forEach((b) => (b.onclick = () => F.toast('Mô phỏng: chia sẻ qua ' + b.dataset.n, 'info'))); }
   });
   document.addEventListener('click', (e) => {

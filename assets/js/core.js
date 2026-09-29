@@ -5,7 +5,7 @@
 (function () {
   const FBV = (window.FBV = window.FBV || {});
   const KEY = 'fbv-v3-proto-db';
-  window.FBV_SEED.version = 7;
+  window.FBV_SEED.version = 8;
 
   /* ---------------- Store ---------------- */
   let DB = null;
@@ -63,10 +63,15 @@
   FBV.session = () => FBV.db().session;
   FBV.me = () => {
     const s = FBV.session(); const u = s.uid ? FBV.user(s.uid) : null;
-    if (u) { ['bookmarks', 'follows', 'blocked', 'interests', 'history'].forEach((k) => { if (!Array.isArray(u[k])) u[k] = []; }); if (!u.handle) u.handle = u.email.split('@')[0]; if (u.bio == null) u.bio = ''; if (!u.prefs) u.prefs = { answer: true, report: true, follow: true, email: false, digest: true }; }
+    if (u) { ['bookmarks', 'follows', 'blocked', 'interests', 'history', 'watch', 'pins', 'notes'].forEach((k) => { if (!Array.isArray(u[k])) u[k] = []; }); if (!u.type) u.type = 'reader'; if (!u.handle) u.handle = u.email.split('@')[0]; if (u.bio == null) u.bio = ''; if (!u.prefs) u.prefs = { answer: true, report: true, follow: true, email: false, digest: true }; }
     return u;
   };
   FBV.isMember = () => !!FBV.me();
+  FBV.isExpertUser = () => { const m = FBV.me(); return !!m && m.type === 'expert'; };
+  FBV.myExpert = () => { const m = FBV.me(); return m && m.expertId ? FBV.expert(m.expertId) : null; };
+  FBV.myApplication = () => { const m = FBV.me(); return m ? (FBV.db().applications || []).find((a) => a.uid === m.id) : null; };
+  FBV.ACCT = { reader: 'Tài khoản thường', expert: 'Chuyên gia' };
+  FBV.APP_STATUS = { draft: 'Bản nháp', submitted: 'Đã nộp', reviewing: 'Đang thẩm định', need_info: 'Cần bổ sung', approved: 'Đã duyệt', rejected: 'Từ chối' };
   const CMS_ID = { expert: 'e1', reviewer: 's1', editor: 's2', admin: 's3' };
   FBV.ROLE_LABEL = { guest: 'Khách', member: 'Độc giả', expert: 'Chuyên gia', reviewer: 'Thẩm định viên', editor: 'Biên tập / Xuất bản', admin: 'Quản trị' };
   FBV.cmsRole = () => FBV.session().cmsRole || null;
@@ -125,11 +130,17 @@
   FBV.STREAM = { fintech: 'Fintech', macro: 'Kinh tế Vĩ mô', micro: 'Kinh tế Vi mô' };
   FBV.STREAM_S = { fintech: 'Fintech', macro: 'Vĩ mô', micro: 'Vi mô' };
   FBV.STATUS = { draft: 'Nháp', in_review: 'Chờ thẩm định', changes_requested: 'Yêu cầu chỉnh sửa', pending_approval: 'Chờ phê duyệt', scheduled: 'Đã lên lịch', published: 'Đã xuất bản', archived: 'Lưu trữ' };
-  FBV.ISTATUS = { new: 'Mới', assigned: 'Đã phân công', in_progress: 'Đang trao đổi', answered: 'Đã trả lời', closed: 'Đã đóng', reported: 'Bị báo cáo' };
+  FBV.ISTATUS = { new: 'Mới', assigned: 'Đã phân công', in_progress: 'Đang trao đổi', answered: 'Đã trả lời', closed: 'Đã đóng', reported: 'Bị bài nghiên cứu' };
   FBV.GROUP = { equity: 'Chứng khoán', rate: 'Lãi suất', fx: 'Tỷ giá & Tiền tệ', commodity: 'Hàng hóa', macro: 'Vĩ mô định kỳ' };
 
   /* ---------------- Icons (outline, 24 grid) ---------------- */
   const P = {
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
+    pin: '<path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3z"/>',
+    award: '<circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-3 5 3-1.5-8"/>',
+    cap: '<path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5M22 9v6"/>',
+    upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+    stickyNote: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z"/><path d="M15 3v6h6M7 13h8M7 17h5"/>',
     home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     read: '<path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/>',
     market: '<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-6"/><path d="M16 7h4v4"/>',
@@ -306,7 +317,7 @@
     if (FBV.isMember()) return true;
     FBV.modal({
       title: 'Đăng nhập để tiếp tục',
-      body: `<div class="stack"><p class="muted">${why || 'Tính năng này dành cho thành viên FBV.'}</p><div class="note">${FBV.icon('info')}<span>Ở chế độ Khách, bạn vẫn xem được danh mục báo cáo và biểu đồ thị trường mà không cần đăng nhập.</span></div></div>`,
+      body: `<div class="stack"><p class="muted">${why || 'Tính năng này dành cho thành viên FBV.'}</p><div class="note">${FBV.icon('info')}<span>Ở chế độ Khách, bạn vẫn xem được danh mục bài nghiên cứu và biểu đồ thị trường mà không cần đăng nhập.</span></div></div>`,
       actions: [{ label: 'Để sau' }, { label: 'Đăng nhập', cls: 'btn-primary', onClick: () => { FBV.go('reader/login.html?next=' + encodeURIComponent(FBV.here())); } }]
     });
     return false;
@@ -341,7 +352,7 @@
   /* ---------------- Demo (role switcher) ---------------- */
   FBV.demoBar = (app) => {
     const s = FBV.session();
-    const cur = app === 'cms' ? s.cmsRole : s.uid ? 'member' : 'guest';
+    const cur = app === 'cms' ? s.cmsRole : s.uid ? (s.uid === 'u7' ? 'expert' : 'member') : 'guest';
     document.querySelectorAll('.demo').forEach((d) => d.remove());
     const wrap = document.createElement('div'); wrap.className = 'demo';
     let open = false; try { open = sessionStorage.getItem('fbv-demo-open') === '1'; } catch (e) {}
@@ -359,6 +370,7 @@
       const r = b.dataset.role;
       if (r === 'guest') { s.uid = null; FBV.save(); if (app === 'cms') FBV.go('reader/index.html'); else location.reload(); return; }
       if (r === 'member') { const u = FBV.user('u1'); u.consent = true; u.onboarded = true; s.uid = 'u1'; FBV.save(); if (app === 'cms') FBV.go('reader/index.html'); else location.reload(); return; }
+      if (r === 'expert' && app !== 'cms') { s.uid = 'u7'; s.cmsRole = 'expert'; FBV.save(); location.reload(); return; }
       s.cmsRole = r; FBV.save(); if (app === 'cms') location.reload(); else FBV.go('cms/index.html');
     }));
     wrap.querySelector('#p2').addEventListener('change', (e) => { s.phase2 = e.target.checked; if (!s.phase2) s.subscription = null; FBV.save(); location.reload(); });
@@ -372,6 +384,8 @@
     FBV.applyTheme();
     const page = document.body.dataset.page; const fn = FBV.pages[page];
     if (FBV.param('p2') === '1' && !FBV.session().phase2) { FBV.session().phase2 = true; FBV.save(); }
+    const as = FBV.param('as'); if (as) { const map = { guest: null, member: 'u1', expert: 'u7' }; FBV.session().uid = as in map ? map[as] : as; if (as === 'expert') FBV.session().cmsRole = 'expert'; FBV.save(); }
+    const ro = FBV.param('role'); if (ro && FBV.ROLE_LABEL[ro]) { FBV.session().cmsRole = ro; FBV.save(); }
     try { if (fn) fn(); } catch (e) { console.error(e); const a = document.getElementById('app') || document.body; a.insertAdjacentHTML('afterbegin', `<div class="note bad" style="margin:16px">${FBV.icon('alert')}<span>Lỗi hiển thị prototype: ${FBV.esc(e.message)}</span></div>`); }
   });
 })();

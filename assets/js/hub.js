@@ -4,23 +4,26 @@
 (function () {
   const F = window.FBV; const pages = (F.pages = F.pages || {}); const I = F.icon;
   const G = [
-    ['Tài khoản & Xác thực', 'user', [['A01', 'Đăng nhập / Đăng ký (Email, Apple, Google)', 'reader/login.html'], ['A02', 'Xác thực OTP', 'reader/otp.html?e=ban.moi@example.com'], ['A03', 'Đồng ý điều khoản (EULA)', 'reader/consent.html'], ['A04', 'Onboarding · Tùy chỉnh trải nghiệm', 'reader/onboarding.html'], ['A05', 'Hồ sơ cá nhân', 'reader/account.html'], ['A06', 'Chỉnh sửa hồ sơ', 'reader/profile-edit.html'], ['A07', 'Cài đặt', 'reader/settings.html'], ['A08', 'Tài khoản', 'reader/account-info.html'], ['A09', 'Xóa tài khoản', 'reader/delete-account.html']]],
-    ['Nghiên cứu & Trình đọc', 'read', [['R01', 'Research Feed · 3 luồng (Chế độ Khách)', 'reader/index.html'], ['R02', 'Tìm kiếm & bộ lọc chủ đề / tác giả', 'reader/search.html'], ['R03', 'Trình đọc báo cáo + widget chỉ số AI', 'reader/report.html?id=r5'], ['R04', 'Native PDF Viewer', 'reader/report-pdf.html?id=r5'], ['R06', 'Hồ sơ chuyên gia · Verified by FBV', 'reader/expert.html?id=e1'], ['R07', 'Thư viện · Đã lưu / Theo dõi / Đã đọc', 'reader/bookmarks.html']]],
-    ['Chỉ số Vĩ mô & Thị trường', 'market', [['R08', 'Thị trường chứng khoán (VN-Index, VN30, HNX, UPCoM)', 'reader/market.html'], ['R09', 'Vĩ mô & Tiền tệ (lãi suất, tỷ giá, hàng hóa, GDP, CPI…)', 'reader/macro.html'], ['R10', 'Chi tiết chỉ số → báo cáo liên quan (AI)', 'reader/indicator.html?id=ON_RATE']]],
+    ['Tài khoản & Xác thực', 'user', [['A01', 'Đăng nhập / Đăng ký (Email, Apple, Google)', 'reader/login.html'], ['A02', 'Xác thực OTP', 'reader/otp.html?e=ban.moi@example.com'], ['A03', 'Đồng ý điều khoản (EULA)', 'reader/consent.html'], ['A04', 'Onboarding · Tùy chỉnh trải nghiệm', 'reader/onboarding.html'], ['A05', 'Hồ sơ cá nhân', 'reader/account.html'], ['A06', 'Chỉnh sửa hồ sơ', 'reader/profile-edit.html'], ['A07', 'Cài đặt', 'reader/settings.html'], ['A08', 'Tài khoản', 'reader/account-info.html'], ['A09', 'Xóa tài khoản', 'reader/delete-account.html'], ['A10', 'Đăng ký chuyên gia · nộp hồ sơ, bằng cấp, chứng chỉ', 'reader/expert-apply.html?as=member'], ['A11', 'Trạng thái hồ sơ chuyên gia (cần bổ sung)', 'reader/expert-apply.html?as=u5']]],
+    ['Không gian làm việc', 'briefcase', [['W01', 'Workspace độc giả · theo dõi, ghim biểu đồ, ghi chú', 'reader/workspace.html?as=member'], ['W02', 'Workspace chuyên gia · bài nghiên cứu, phản biện, hồ sơ', 'reader/workspace.html?as=expert']]],
+    ['Nghiên cứu & Trình đọc', 'read', [['R01', 'Research Feed · 3 luồng (Chế độ Khách)', 'reader/index.html'], ['R02', 'Tìm kiếm & bộ lọc chủ đề / tác giả', 'reader/search.html'], ['R03', 'Trình đọc bài nghiên cứu · Phần 1 nội dung → Phần 2 biểu đồ AI', 'reader/report.html?id=r5'], ['R04', 'Native PDF Viewer', 'reader/report-pdf.html?id=r5'], ['R06', 'Hồ sơ chuyên gia · Verified by FBV', 'reader/expert.html?id=e1'], ['R07', 'Thư viện · Đã lưu / Theo dõi / Đã đọc', 'reader/bookmarks.html']]],
+    ['Chỉ số Vĩ mô & Thị trường', 'market', [['R08', 'Thị trường chứng khoán (VN-Index, VN30, HNX, UPCoM) · dữ liệu qua vnstock', 'reader/market.html'], ['R09', 'Vĩ mô & Tiền tệ (lãi suất, tỷ giá, hàng hóa, GDP, CPI…)', 'reader/macro.html'], ['R10', 'Chi tiết chỉ số → bài nghiên cứu liên quan (AI)', 'reader/indicator.html?id=ON_RATE']]],
     ['Phản biện 1:1 & Hoạt động', 'chat', [['R05', 'Trích dẫn & gửi phản biện (bôi đen trong bài)', 'reader/report.html?id=r6'], ['R12', 'Danh sách phản biện (Chat)', 'reader/inquiries.html'], ['R13', 'Phiên 1:1 kín · Báo cáo / Chặn', 'reader/inquiry.html?id=q1'], ['R11', 'Hoạt động (thông báo)', 'reader/notifications.html']]],
     ['Pháp lý', 'file', [['L01', 'Điều khoản sử dụng (EULA)', 'reader/terms.html'], ['L02', 'Chính sách bảo mật', 'reader/privacy.html'], ['L03', 'Miễn trừ trách nhiệm đầu tư', 'reader/disclaimer.html']]],
-    ['Phase 2 · Thương mại hóa', 'crown', [['P00', 'Paywall & Teaser trên báo cáo Premium', 'reader/report.html?id=r5&p2=1'], ['P01', 'Gói hội viên (Tháng / Quý / Năm / Mua lẻ)', 'reader/pricing.html?p2=1'], ['P02', 'Thanh toán Apple IAP / Google Play Billing', 'reader/checkout.html?plan=yearly&p2=1'], ['P03', 'Quản lý gói · Khôi phục giao dịch', 'reader/subscription.html?p2=1'], ['P04', 'Buổi trao đổi kín cùng chuyên gia', 'reader/sessions.html?p2=1']]],
-    ['CMS Web Portal', 'grid', [['C01', 'Đăng nhập CMS (chọn vai trò)', 'cms/login.html'], ['C02', 'Dashboard', 'cms/index.html'], ['C03', 'Danh sách báo cáo', 'cms/reports.html'], ['C04', 'Soạn thảo báo cáo', 'cms/editor.html?id=r13'], ['C06', 'Thẩm định học thuật (FBV Review)', 'cms/review.html?id=r14'], ['C05·C07', 'Duyệt liên kết AI & Xuất bản', 'cms/publish.html?id=r16'], ['C09', 'Hàng đợi phản biện 1:1', 'cms/inquiries.html'], ['C10', 'Chi tiết phiên phản biện', 'cms/inquiry.html?id=q4'], ['C11', 'Kiểm duyệt vi phạm', 'cms/moderation.html'], ['C12', 'Chuyên gia · huy hiệu Verified', 'cms/experts.html'], ['C13', 'Danh mục chỉ số (master data AI)', 'cms/indicators.html'], ['C14', 'Người dùng', 'cms/users.html']]]
+    ['Phase 2 · Thương mại hóa', 'crown', [['P00', 'Paywall & Teaser trên bài nghiên cứu Premium', 'reader/report.html?id=r5&p2=1'], ['P01', 'Gói hội viên (Tháng / Quý / Năm / Mua lẻ)', 'reader/pricing.html?p2=1'], ['P02', 'Thanh toán Apple IAP / Google Play Billing', 'reader/checkout.html?plan=yearly&p2=1'], ['P03', 'Quản lý gói · Khôi phục giao dịch', 'reader/subscription.html?p2=1'], ['P04', 'Buổi trao đổi kín cùng chuyên gia', 'reader/sessions.html?p2=1']]],
+    ['CMS Web Portal', 'grid', [['C01', 'Đăng nhập CMS (chọn vai trò)', 'cms/login.html'], ['C02', 'Dashboard', 'cms/index.html'], ['C03', 'Danh sách bài nghiên cứu', 'cms/reports.html'], ['C04', 'Soạn thảo bài nghiên cứu', 'cms/editor.html?id=r13'], ['C06', 'Thẩm định học thuật (FBV Review)', 'cms/review.html?id=r14'], ['C05·C07', 'AI gắn tag & tham số biểu đồ · Xuất bản', 'cms/publish.html?id=r16'], ['C09', 'Hàng đợi phản biện 1:1', 'cms/inquiries.html'], ['C10', 'Chi tiết phiên phản biện', 'cms/inquiry.html?id=q4'], ['C11', 'Kiểm duyệt vi phạm', 'cms/moderation.html'], ['C12', 'Chuyên gia · huy hiệu Verified', 'cms/experts.html'], ['C15', 'Hồ sơ đăng ký chuyên gia', 'cms/applications.html?role=admin'], ['C16', 'Thẩm định & duyệt hồ sơ chuyên gia', 'cms/application.html?id=ap1&role=admin'], ['C13', 'Danh mục chỉ số · nguồn vnstock', 'cms/indicators.html'], ['C14', 'Người dùng', 'cms/users.html']]]
   ];
   const FL = [
-    ['F1', 'Khách → Đọc báo cáo → Đăng nhập để lưu', 'reader/index.html'],
+    ['F1', 'Khách → Đọc bài nghiên cứu → Đăng nhập để lưu', 'reader/index.html'],
     ['F2', 'Đăng ký mới: Email → OTP → Điều khoản → Onboarding', 'reader/login.html'],
     ['F3', 'Bôi đen trong bài → Gửi phản biện → Phiên 1:1', 'reader/report.html?id=r6'],
-    ['F4', 'Báo cáo ↔ Chỉ số (Vertex AI Contextual Linking)', 'reader/indicator.html?id=CPI'],
+    ['F4', 'Bài nghiên cứu ↔ Chỉ số (Vertex AI Contextual Linking)', 'reader/indicator.html?id=CPI'],
     ['F5', 'CMS: Soạn → Thẩm định → Duyệt AI → Xuất bản', 'cms/login.html'],
     ['F6', 'CMS: Điều phối phản biện theo SLA & kiểm duyệt', 'cms/inquiries.html'],
     ['F7', 'Cài đặt → Tài khoản → Xóa tài khoản', 'reader/settings.html'],
-    ['F8', 'Phase 2: Paywall → Gói → IAP → Premium → Khôi phục', 'reader/report.html?id=r3&p2=1']
+    ['F8', 'Phase 2: Paywall → Gói → IAP → Premium → Khôi phục', 'reader/report.html?id=r3&p2=1'],
+    ['F9', 'Đăng ký chuyên gia → FBV Review xác minh → Admin duyệt', 'reader/expert-apply.html?as=member'],
+    ['F10', 'Chuyên gia: Workspace → Soạn bài → Phản biện', 'reader/workspace.html?as=expert']
   ];
   pages.hub = () => {
     document.body.classList.add('rd', 'no-tab');
@@ -36,6 +39,6 @@
   pages.notfound = () => {
     document.body.classList.add('rd', 'no-tab');
     const a = document.getElementById('app'); a.className = 'app';
-    a.innerHTML = `<div style="max-width:480px;margin:0 auto;padding:80px 16px">${F.empty('search', 'Không tìm thấy trang', 'Liên kết có thể đã thay đổi hoặc báo cáo đã được gỡ.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Về trang chủ</a>`)}</div>`;
+    a.innerHTML = `<div style="max-width:480px;margin:0 auto;padding:80px 16px">${F.empty('search', 'Không tìm thấy trang', 'Liên kết có thể đã thay đổi hoặc bài nghiên cứu đã được gỡ.', `<a class="btn btn-primary" href="${F.url('reader/index.html')}">Về trang chủ</a>`)}</div>`;
   };
 })();

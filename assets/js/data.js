@@ -83,7 +83,7 @@
     updatedAt: ago(15 * 60e3)
   };
 
-  /* ---------------- Báo cáo ---------------- */
+  /* ---------------- Bài nghiên cứu ---------------- */
   const P = (x) => ({ t: 'p', x });
   const Hh = (x) => ({ t: 'h', x });
   const reports = [
@@ -136,7 +136,7 @@
         Hh('Ba kịch bản'),
         P('Kịch bản một là cấm hoàn toàn giao dịch trong nước — dễ thực thi trên giấy nhưng đẩy hoạt động ra nước ngoài. Kịch bản hai là thí điểm sàn giao dịch được cấp phép với yêu cầu vốn và lưu ký chặt chẽ. Kịch bản ba là quản lý như chứng khoán, áp dụng toàn bộ khung công bố thông tin.'),
         P('Mối liên hệ với tỷ giá thường bị bỏ qua: khi đồng USD toàn cầu mạnh lên, nhu cầu nắm giữ stablecoin neo USD như một kênh trú ẩn có xu hướng tăng, tạo áp lực gián tiếp lên thị trường ngoại hối.'),
-        P('Báo cáo nghiêng về kịch bản thí điểm có kiểm soát, kèm cơ chế báo cáo giao dịch xuyên biên giới để đo lường dòng vốn.')
+        P('Bài nghiên cứu nghiêng về kịch bản thí điểm có kiểm soát, kèm cơ chế báo cáo giao dịch xuyên biên giới để đo lường dòng vốn.')
       ] },
     { id: 'r5', stream: 'macro', status: 'published', author: 'e1', premium: true, readTime: 11, cover: 5, pdf: true, featured: true,
       title: 'Lãi suất điều hành và thanh khoản hệ thống ngân hàng: đọc tín hiệu từ thị trường liên ngân hàng',
@@ -211,7 +211,7 @@
         P('Phân tích dữ liệu phiên cho thấy giá trị giao dịch thường tăng vọt vào các phiên chỉ số biến động trên 2%, bất kể chiều tăng hay giảm — dấu hiệu của hành vi "chạy theo xu hướng".'),
         Hh('Nhìn xa hơn chỉ số'),
         P('Chỉ số đại diện như VN-Index bị chi phối bởi nhóm vốn hóa lớn. Để đánh giá đúng trạng thái thị trường, nhà nghiên cứu nên kết hợp độ rộng thị trường (số mã tăng/giảm) và chỉ số của các sàn nhỏ hơn như HNX và UPCoM.'),
-        P('Báo cáo mang tính nghiên cứu hành vi, không đưa ra khuyến nghị mua bán bất kỳ mã chứng khoán nào.')
+        P('Bài nghiên cứu mang tính nghiên cứu hành vi, không đưa ra khuyến nghị mua bán bất kỳ mã chứng khoán nào.')
       ] },
     { id: 'r11', stream: 'micro', status: 'published', author: 'e4', premium: true, readTime: 11, cover: 11, pdf: true,
       title: 'Dòng vốn khối ngoại: mô thức rút ròng và các yếu tố chi phối',
@@ -257,7 +257,7 @@
         P('Chênh lệch giữa giá trong nước và giá thế giới quy đổi đã thu hẹp sau khi nguồn cung được bổ sung. Tỷ giá USD/VND là biến số trực tiếp trong công thức quy đổi.'),
         Hh('Độ bền vững'),
         P('Việc duy trì chênh lệch thấp phụ thuộc vào cơ chế cung ứng linh hoạt và tính minh bạch của thông tin giá. Nếu nguồn cung bị gián đoạn, chênh lệch có thể nới rộng trở lại.'),
-        P('Báo cáo đề xuất công bố định kỳ chênh lệch giá như một chỉ báo thị trường.')
+        P('Bài nghiên cứu đề xuất công bố định kỳ chênh lệch giá như một chỉ báo thị trường.')
       ] },
     { id: 'r15', stream: 'fintech', status: 'changes_requested', author: 'e2', premium: false, readTime: 7, cover: 1, pdf: false,
       title: 'Ví điện tử và hành vi chi tiêu của người trẻ',
@@ -293,7 +293,7 @@
       ] }
   ];
 
-  /* ---------------- Liên kết AI (Báo cáo ↔ Chỉ số) ----------------
+  /* ---------------- Liên kết AI (Bài nghiên cứu ↔ Chỉ số) ----------------
      a = vị trí khối nội dung (chèn widget sau khối này), c = độ tin cậy,
      s = accepted | suggested | rejected | manual */
   const links = [
@@ -366,9 +366,9 @@
 
   const notifications = [
     { id: 'n1', user: 'u1', type: 'answer', ref: 'q1', text: 'TS. Trần Quốc Bảo đã trả lời phản biện của bạn về "Lãi suất điều hành và thanh khoản hệ thống ngân hàng".', at: ago(6 * H), read: false },
-    { id: 'n2', user: 'u1', type: 'report', ref: 'r7', text: 'Báo cáo mới trong Kinh tế Vĩ mô: "Lạm phát 2026: cấu phần giá và rủi ro từ giá năng lượng".', at: ago(20 * H), read: false },
+    { id: 'n2', user: 'u1', type: 'report', ref: 'r7', text: 'Bài nghiên cứu mới trong Kinh tế Vĩ mô: "Lạm phát 2026: cấu phần giá và rủi ro từ giá năng lượng".', at: ago(20 * H), read: false },
     { id: 'n3', user: 'u1', type: 'answer', ref: 'q2', text: 'TS. Trần Quốc Bảo đã phản hồi trong phiên phản biện về "Áp lực tỷ giá USD/VND".', at: ago(32 * D), read: true },
-    { id: 'n4', user: 'u1', type: 'follow', ref: 'r5', text: 'Chuyên gia bạn theo dõi (TS. Trần Quốc Bảo) vừa xuất bản báo cáo mới.', at: ago(1 * D + 5 * H), read: true },
+    { id: 'n4', user: 'u1', type: 'follow', ref: 'r5', text: 'Chuyên gia bạn theo dõi (TS. Trần Quốc Bảo) vừa xuất bản bài nghiên cứu mới.', at: ago(1 * D + 5 * H), read: true },
     { id: 'n5', user: 'u1', type: 'system', ref: null, text: 'Chào mừng bạn đến với FBV — nền tảng nghiên cứu kinh tế – tài chính được thẩm định bởi chuyên gia.', at: ago(62 * D), read: true }
   ];
 
@@ -389,9 +389,56 @@
     { r: 'r13', at: ago(3 * H), by: 'e1', act: 'Lưu bản nháp' }
   ];
 
+
+  /* ---------------- v3.1: Phân loại tài khoản · Hồ sơ chuyên gia · Nguồn vnstock · Workspace ---------------- */
+  users.forEach((u) => { u.type = 'reader'; });
+  users[0].watch = ['VNINDEX', 'USDVND', 'ON_RATE', 'CPI'];
+  users[0].pins = [{ i: 'VNINDEX', r: '1M' }, { i: 'CPI', r: '' }];
+  users[0].notes = [
+    { id: 'nt1', r: 'r5', quote: 'Lãi suất qua đêm thường tăng vào tuần cuối tháng và cuối quý', x: 'Đối chiếu với số liệu OMO tuần cuối tháng 9 để kiểm chứng.', at: ago(3 * D) },
+    { id: 'nt2', r: 'r6', quote: 'Thặng dư thương mại lũy kế và dòng vốn FDI giải ngân ổn định', x: 'Dùng làm luận điểm cho bài thuyết trình nội bộ về tỷ giá.', at: ago(9 * D) }
+  ];
+  // Tài khoản ứng dụng của chuyên gia (đăng nhập app như người dùng, loại tài khoản = expert)
+  users.push({ id: 'u7', name: 'TS. Trần Quốc Bảo', email: 'tqbao@fbv.example', interests: ['macro'], joined: ago(400 * D), consent: true, onboarded: true, bookmarks: ['r6'], follows: ['e5'], blocked: [], status: 'active', type: 'expert', expertId: 'e1', watch: ['ON_RATE', 'POLICY_RATE', 'CREDIT', 'USDVND'], pins: [{ i: 'ON_RATE', r: '1M' }], notes: [] });
+
+  const CRED = {
+    e1: { degrees: [['Tiến sĩ Kinh tế học', 'Đại học Quốc gia Úc (ANU)', 2011], ['Thạc sĩ Tài chính', 'Đại học Kinh tế Quốc dân', 2006]], certs: [['CFA Charterholder', 'CFA Institute', 'CFA-118204', 2014]], exp: [['Viện Nghiên cứu FBV', 'Trưởng nhóm Kinh tế vĩ mô', '2019 – nay'], ['Tổ chức phát triển khu vực châu Á', 'Chuyên gia tư vấn chính sách', '2013 – 2019']], works: 42 },
+    e2: { degrees: [['Thạc sĩ Tài chính – Ngân hàng', 'Đại học Ngân hàng TP.HCM', 2012]], certs: [['FRM', 'GARP', 'FRM-77310', 2016], ['Chứng chỉ Fintech', 'Đại học Oxford (Saïd)', '—', 2020]], exp: [['FBV Fintech Lab', 'Trưởng phòng nghiên cứu', '2021 – nay']], works: 18 },
+    e3: { degrees: [['Phó Giáo sư', 'Hội đồng GS Nhà nước', 2018], ['Tiến sĩ Tài chính doanh nghiệp', 'Đại học Kinh tế TP.HCM', 2009]], certs: [['ACCA', 'ACCA Global', 'ACCA-2291873', 2008]], exp: [['Trường Kinh tế — ĐHQG', 'Giảng viên cao cấp', '2009 – nay']], works: 57 },
+    e4: { degrees: [['Tiến sĩ Tài chính', 'Đại học Paris-Dauphine', 2013]], certs: [['CFA Charterholder', 'CFA Institute', 'CFA-133580', 2015], ['Chứng chỉ hành nghề chứng khoán', 'UBCKNN', '003921/QLKQ', 2012]], exp: [['Viện Nghiên cứu FBV', 'Chuyên gia thị trường vốn', '2020 – nay']], works: 31 },
+    e5: { degrees: [['Thạc sĩ Kinh tế lượng', 'Đại học Kinh tế Quốc dân', 2015]], certs: [['CPA Việt Nam', 'Bộ Tài chính', 'CPA-2107', 2019]], exp: [['FBV Macro Desk', 'Chuyên viên phân tích', '2018 – nay']], works: 23 },
+    e6: { degrees: [['Tiến sĩ Kinh tế quốc tế', 'Đại học Ngoại thương', 2014]], certs: [], exp: [['Viện Nghiên cứu FBV', 'Nghiên cứu viên', '2024 – nay']], works: 9 }
+  };
+  experts.forEach((e) => { const c = CRED[e.id]; e.degrees = c.degrees.map((d) => ({ name: d[0], school: d[1], year: d[2], verified: e.verified })); e.certs = c.certs.map((d) => ({ name: d[0], issuer: d[1], no: d[2], year: d[3], verified: e.verified })); e.exp = c.exp.map((d) => ({ org: d[0], role: d[1], time: d[2] })); e.works = c.works; e.uid = e.id === 'e1' ? 'u7' : null; });
+
+  // Hồ sơ đăng ký chuyên gia (nộp trên app → Admin duyệt trong CMS)
+  const applications = [
+    { id: 'ap1', uid: 'u4', name: 'Phan Đức Thịnh', email: 'ducthinh@example.com', phone: '09xx xxx 214', title: 'Chuyên viên phân tích ngành Ngân hàng', org: 'Công ty Chứng khoán ABC', fields: ['micro', 'fintech'], bio: 'Hơn 8 năm phân tích ngành ngân hàng và bảo hiểm, phụ trách mảng định giá doanh nghiệp niêm yết.',
+      degrees: [{ name: 'Thạc sĩ Tài chính', school: 'Đại học Kinh tế TP.HCM', year: 2017, file: 'bang-thac-si.pdf' }], certs: [{ name: 'CFA Level III Candidate', issuer: 'CFA Institute', no: '—', year: 2025, file: 'cfa-l2-result.pdf' }, { name: 'Chứng chỉ hành nghề chứng khoán', issuer: 'UBCKNN', no: '004512/PTTC', year: 2018, file: 'cchn.pdf' }],
+      exp: [{ org: 'Công ty Chứng khoán ABC', role: 'Chuyên viên phân tích cấp cao', time: '2019 – nay' }], links: ['linkedin.com/in/ducthinh'], sample: 'Định giá nhóm ngân hàng niêm yết 2026 (PDF, 18 trang)', coi: true, status: 'reviewing', createdAt: ago(2 * D), log: [{ at: ago(2 * D), x: 'Nộp hồ sơ' }, { at: ago(20 * H), by: 's3', x: 'Bắt đầu thẩm định' }] },
+    { id: 'ap2', uid: 'u5', name: 'Võ Hà My', email: 'hamy@example.com', phone: '09xx xxx 876', title: 'Nghiên cứu sinh Kinh tế số', org: 'Đại học Kinh tế Quốc dân', fields: ['fintech'], bio: 'Nghiên cứu hành vi thanh toán số của người trẻ, đồng tác giả 3 bài báo khoa học.',
+      degrees: [{ name: 'Thạc sĩ Kinh tế', school: 'Đại học Kinh tế Quốc dân', year: 2022, file: 'bang-ths.pdf' }], certs: [], exp: [{ org: 'Đại học Kinh tế Quốc dân', role: 'Trợ giảng', time: '2022 – nay' }], links: ['scholar.google.com/…'], sample: 'Ví điện tử và thói quen chi tiêu (bài báo khoa học)', coi: true, status: 'need_info', note: 'Vui lòng bổ sung bản scan bằng Thạc sĩ có công chứng và danh sách công trình đã công bố.', createdAt: ago(6 * D), log: [{ at: ago(6 * D), x: 'Nộp hồ sơ' }, { at: ago(4 * D), by: 's3', x: 'Yêu cầu bổ sung hồ sơ' }] },
+    { id: 'ap3', uid: null, name: 'TS. Vũ Đức Long', email: 'vdlong@fbv.example', phone: '—', title: 'Chuyên gia Thương mại & FDI', org: 'Viện Nghiên cứu FBV', fields: ['macro', 'micro'], bio: 'Nghiên cứu FDI và dịch chuyển chuỗi cung ứng.',
+      degrees: [{ name: 'Tiến sĩ Kinh tế quốc tế', school: 'Đại học Ngoại thương', year: 2014, file: 'bang-ts.pdf' }], certs: [], exp: [{ org: 'Viện Nghiên cứu FBV', role: 'Nghiên cứu viên', time: '2024 – nay' }], links: [], sample: 'FDI và động lực tăng trưởng GDP', coi: true, status: 'submitted', createdAt: ago(10 * H), log: [{ at: ago(10 * H), x: 'Nộp hồ sơ (bổ sung huy hiệu Verified)' }] }
+  ];
+
+  // Ánh xạ nguồn dữ liệu vnstock cho từng chỉ số (backend thu thập, app chỉ hiển thị)
+  const VN = {
+    VNINDEX: ['Quote.history · Trading.price_board', 'KBS / VCI', '1 phút (trong phiên)'], VN30: ['Quote.history · Trading.price_board', 'KBS / VCI', '1 phút (trong phiên)'], HNX: ['Quote.history', 'KBS / VCI', '1 phút (trong phiên)'], UPCOM: ['Quote.history', 'KBS / VCI', '1 phút (trong phiên)'],
+    POLICY_RATE: ['Macro.interest_rate', 'vnstock_data', 'Hằng ngày'], ON_RATE: ['Macro.interest_rate', 'vnstock_data', 'Hằng ngày'], IB_1W: ['Macro.interest_rate', 'vnstock_data', 'Hằng ngày'], DEP_12M: ['Macro.interest_rate (tiền gửi)', 'vnstock_data', 'Hằng tuần'],
+    USDVND: ['Retail.exchange_rate', 'VCB', 'Hằng ngày'], DXY: ['World.index', 'MSN', '15 phút'], GOLD: ['Commodity.gold · World', 'MSN / SJC-BTMC', '15 phút'], BRENT: ['Commodity.oil', 'MSN', '15 phút'], WTI: ['Commodity.oil', 'MSN', '15 phút'],
+    GDP: ['Macro.gdp', 'vnstock_data', 'Theo kỳ công bố'], CPI: ['Macro.cpi', 'vnstock_data', 'Theo kỳ công bố'], FDI: ['Macro.fdi', 'vnstock_data', 'Theo kỳ công bố'], IIP: ['Macro.industry_prod', 'vnstock_data', 'Theo kỳ công bố'], TRADE_BAL: ['Macro.trade', 'vnstock_data', 'Theo kỳ công bố'], CREDIT: ['Macro.money_supply / credit', 'vnstock_data', 'Theo kỳ công bố']
+  };
+  indicators.forEach((i) => { const m = VN[i.id]; i.vn = { fn: m[0], src: m[1], every: m[2], lastSync: ago((i.group === 'macro' ? 26 : 0.3) * H), ok: i.id !== 'IIP' }; });
+
+  // Tham số biểu đồ do AI đề xuất cho mỗi liên kết bài nghiên cứu ↔ chỉ số
+  links.forEach((l) => { const ind = indicators.find((x) => x.id === l.i); l.p = { chart: ind.group === 'macro' ? 'bar' : 'line', range: ind.group === 'macro' ? '12K' : ind.group === 'equity' ? '1M' : '1Y' }; });
+  // Thẻ AI nhận diện (chủ đề, thực thể) cho từng bài
+  reports.forEach((r) => { r.aiTags = r.tags.map((t, k) => ({ k: t, type: 'topic', c: +(0.95 - k * 0.07).toFixed(2) })); });
+
   window.FBV_SEED = {
     version: 4,
-    experts, staff, users, indicators, market, reports, links, inquiries, moderation, notifications, reviews, history,
+    experts, staff, users, indicators, market, reports, links, inquiries, moderation, notifications, reviews, history, applications,
     session: { role: 'guest', uid: null, phase2: false, subscription: null },
     config: { quotaPerMonth: 3, slaHours: 72, aiThreshold: 0.75 }
   };
