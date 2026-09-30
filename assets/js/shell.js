@@ -41,6 +41,7 @@
       ['market', 'reader/market.html', 'Thị trường', 'market'],
       ['macro', 'reader/macro.html', 'Vĩ mô & Tiền tệ', 'globe'],
       ['chat', 'reader/inquiries.html', 'Phản biện 1:1', 'chat'],
+      ['assistant', 'reader/assistant.html', 'Trợ lý AI', 'sparkles'],
       ['activity', 'reader/notifications.html', 'Hoạt động', 'bell'],
       ['me', me ? 'reader/account.html' : 'reader/login.html', 'Hồ sơ', 'user']
     ];

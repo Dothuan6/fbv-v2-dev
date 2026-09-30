@@ -436,10 +436,61 @@
   // Thẻ AI nhận diện (chủ đề, thực thể) cho từng bài
   reports.forEach((r) => { r.aiTags = r.tags.map((t, k) => ({ k: t, type: 'topic', c: +(0.95 - k * 0.07).toFixed(2) })); });
 
+
+  /* ---------------- v3.2: Chat phản biện nâng cao · Gọi theo lịch · Phòng trao đổi kín · Nhật ký nghiên cứu ---------------- */
+  const M = 60 * 1000;
+  // q1: trả lời trích dẫn, phản hồi học thuật, file & ảnh, liên kết, 2 tin nhắn mới
+  (() => { const q = inquiries[0];
+    q.messages[1].x = 'Chênh lệch được tính giữa tốc độ tăng trưởng tín dụng và tốc độ tăng huy động vốn của toàn hệ thống, theo số liệu NHNN công bố tại https://www.sbv.gov.vn (mục Thống kê tiền tệ).';
+    q.messages[1].rx = { u1: 'useful' };
+    q.messages[3].re = 2;
+    q.messages.push({ by: 'e1', at: ago(5.9 * H), x: 'Gửi anh/chị bảng ước lượng và biểu đồ chênh lệch so cùng kỳ để tham khảo.', files: [{ name: 'Uoc-luong-chenh-lech-tin-dung-huy-dong.xlsx', size: 48200, kind: 'file', scan: 'ok' }, { name: 'bieu-do-chenh-lech-yoy.png', size: 182000, kind: 'image', scan: 'ok' }] });
+    q.readerSeen = 3; })();
+  // q2: tin nhắn đã thu hồi, cuộc gọi theo lịch (Phase 2), tắt thông báo
+  (() => { const q = inquiries[1];
+    q.messages.splice(2, 0, { by: 'u1', at: ago(32 * D - 20 * M), x: 'Em gửi nhầm câu hỏi của bài khác, xin lỗi anh.', recalled: true, recalledAt: ago(32 * D - 18 * M) });
+    q.calls = [
+      { id: 'c1', kind: 'voice', by: 'u1', at: ago(25 * D), dur: 18 * 60 + 42, status: 'done', note: 'Trao đổi phương pháp hồi quy ngưỡng' },
+      { id: 'c2', kind: 'video', by: 'u1', at: later(2 * M), dur: 0, len: 30, status: 'scheduled', note: 'Kết quả kiểm định giai đoạn 2022–2025' }
+    ];
+    q.mutedUntil = 'forever'; q.readerSeen = q.messages.length; })();
+  inquiries.forEach((q) => { if (q.readerSeen == null) q.readerSeen = q.messages.length; });
+
+  // Buổi trao đổi kín (Phase 2) — mỗi buổi tự tạo 1 phòng trao đổi kín; chỉ Admin tạo buổi/phòng
+  const sessions = [
+    { id: 'ss0', e: 'e3', at: ago(10 * M), len: 60, t: 'Chi phí vốn doanh nghiệp niêm yết khi lãi suất đảo chiều', seats: 20, taken: 17 },
+    { id: 'ss1', e: 'e1', at: later(6 * D), len: 60, t: 'Chính sách tiền tệ quý IV: kịch bản lãi suất và thanh khoản', seats: 20, taken: 14 },
+    { id: 'ss2', e: 'e2', at: later(13 * D), len: 60, t: 'Ngân hàng số sau sandbox: mô hình kinh doanh nào sẽ trụ lại?', seats: 20, taken: 9 },
+    { id: 'ss3', e: 'e4', at: later(20 * D), len: 60, t: 'Dòng vốn khối ngoại và nâng hạng thị trường', seats: 25, taken: 21 }
+  ];
+  const rooms = [
+    { id: 'ss0', session: 'ss0', owner: 'e3', mod: 's2', members: ['e3', 's2', 'u1', 'u2', 'u3', 'u4'], createdBy: 's3', createdAt: ago(9 * D),
+      pinned: 'Chương trình: (1) Chi phí vốn bình quân WACC 2024–2026 · (2) Độ nhạy theo ngành · (3) Hỏi đáp. Vui lòng gửi câu hỏi trước 19:00.',
+      messages: [
+        { by: 's2', at: ago(2 * D), x: 'Chào mừng các hội viên đến phòng trao đổi kín. Phòng chỉ gồm chuyên gia, điều phối viên FBV và hội viên đã đăng ký buổi này.' },
+        { by: 'u2', at: ago(1 * D), x: 'Em muốn hỏi thêm về cách ước lượng beta cho nhóm doanh nghiệp vốn hóa nhỏ, thanh khoản thấp.' },
+        { by: 'e3', at: ago(20 * H), x: 'Câu hỏi hay. Tôi sẽ trình bày cách điều chỉnh beta theo Dimson và so sánh với beta ngành trong phần 2.', re: 1, rx: { u2: 'useful', u3: 'useful' } },
+        { by: 'e3', at: ago(3 * H), x: 'Tài liệu đọc trước cho buổi tối nay.', files: [{ name: 'WACC-niem-yet-2024-2026.pdf', size: 1240000, kind: 'file', scan: 'ok' }] },
+        { by: 'u3', at: ago(40 * M), x: 'Buổi hôm nay có chia sẻ lại slide sau khi kết thúc không ạ?' },
+        { by: 's2', at: ago(35 * M), x: 'Có ạ, slide và biên bản tóm tắt sẽ được đăng trong phòng sau buổi.', re: 4 }
+      ] },
+    { id: 'ss1', session: 'ss1', owner: 'e1', mod: 's2', members: ['e1', 's2', 'u2', 'u3'], createdBy: 's3', createdAt: ago(3 * D),
+      pinned: 'Chương trình: (1) Lãi suất liên ngân hàng cuối năm · (2) Kịch bản điều hành · (3) Hỏi đáp.',
+      messages: [{ by: 's2', at: ago(3 * D), x: 'Phòng trao đổi kín đã được tạo cho buổi 60 phút cùng TS. Trần Quốc Bảo.' }] }
+  ];
+  // Nhật ký nghiên cứu: đính kèm tệp/ảnh/liên kết cho ghi chú
+  users[0].notes.push(
+    { id: 'nt3', x: 'Checklist số liệu cần theo dõi tuần này: lãi suất qua đêm, OMO, tỷ giá trung tâm. Nguồn: https://www.sbv.gov.vn', at: ago(1 * D), ind: 'ON_RATE' },
+    { id: 'nt4', x: 'Bảng tổng hợp CPI theo nhóm hàng để đối chiếu với bài của ThS. Đỗ Hải Yến.', at: ago(5 * D), r: 'r7', files: [{ name: 'CPI-nhom-hang-2026.xlsx', size: 36400, kind: 'file' }] },
+    { id: 'nt5', x: 'Ảnh chụp slide hội thảo về dòng vốn ngoại.', at: ago(12 * D), files: [{ name: 'slide-dong-von-ngoai.jpg', size: 412000, kind: 'image' }] }
+  );
+  users[0].notes.sort((a, b) => new Date(b.at) - new Date(a.at));
+  experts[0].cover = 'navy'; experts[3].cover = 'purple';
+
   window.FBV_SEED = {
     version: 4,
-    experts, staff, users, indicators, market, reports, links, inquiries, moderation, notifications, reviews, history, applications,
-    session: { role: 'guest', uid: null, phase2: false, subscription: null },
+    experts, staff, users, indicators, market, reports, links, inquiries, moderation, notifications, reviews, history, applications, sessions, rooms,
+    session: { role: 'guest', uid: null, phase2: false, subscription: null, rsvp: [] },
     config: { quotaPerMonth: 3, slaHours: 72, aiThreshold: 0.75 }
   };
 })();

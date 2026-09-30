@@ -9,7 +9,7 @@ Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu tron
 - **Logo FBV.ONE** (PNG nền trong suốt): `assets/media/logo.png`, `logo-mark.png`, `favicon.png`, `apple-touch-icon.png`.
 - **Bảng màu lấy từ logo**: Navy `#00254F` (nền) · Vàng `#FECB00` (nút chính, điểm nhấn) · Cyan `#1BACCE` / Xanh `#0D86B8` (thông tin, Verified) · Cam `#FE8C10` (cảnh báo) · Tím `#6C06C8` (Premium, chữ “.ONE”, liên kết ở giao diện Sáng).
 - **Tiêu đề serif** (Spectral), chữ giao diện Inter.
-- **Tab bar 5 mục**: Trang chủ · Thư viện · Thị trường · Phản biện · Hoạt động; avatar góc phải mở Hồ sơ.
+- **Tab bar 5 mục**: Trang chủ · Làm việc · Thị trường · Phản biện · Hoạt động; avatar góc phải mở Hồ sơ.
 - **Danh sách nhóm bo góc** (grouped list) cho Cài đặt / Tài khoản; hồ sơ kiểu "tên lớn + avatar phải + nút Chỉnh sửa + tab gạch chân".
 - Nút tròn **＋** cam để theo dõi khi onboarding, nút CTA dạng viên thuốc ở đáy màn hình.
 - Mobile-first, mở rộng dần: **≥ 768px** thanh icon bên trái · **≥ 1100px** sidebar đầy đủ · **≥ 1280px** cột phụ (thị trường, chuyên gia).
@@ -23,6 +23,17 @@ Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu tron
 - **Nguồn dữ liệu:** chỉ số ghi nguồn "thu thập qua vnstock"; CMS Danh mục chỉ số có cột mapping hàm/nguồn/tần suất/đồng bộ.
 - Tham số URL demo: `?as=member|expert|u5` (đăng nhập nhanh), `?role=admin|editor|reviewer|expert` (vai trò CMS), `?p2=1` (Phase 2).
 - Tài liệu phân tích & kế hoạch: `FBV-v2\outputs\FBV_v3.1_PhanTich_KeHoach.md`.
+
+## Cập nhật v3.2 (30/09/2026) — tính năng tham khảo từ chat FBV.ONE (đã duyệt)
+
+- **Chat phản biện nâng cao** (`reader/inquiry.html`): trả lời trích dẫn, phản hồi học thuật (👍 Hữu ích · ✔ Đã rõ · ❓ Cần làm rõ), sao chép, thu hồi trong 5 phút / xóa phía tôi (nội dung gốc vẫn lưu cho kiểm duyệt — xem trong CMS), đính kèm file & ảnh có quét virus, panel Ảnh · File · Liên kết, vạch “Tin nhắn mới”, tắt thông báo từng phiên, tìm kiếm trong danh sách và trong phiên, ẩn lịch sử phía người dùng.
+- **Phase 2 · Gọi theo lịch hẹn** (`reader/call.html`): đặt lịch gọi thoại/video 1:1 (Premium) và tham gia video buổi trao đổi kín — không gọi tự do, không ghi âm.
+- **Phase 2 · Phòng trao đổi kín** (`reader/room.html`): mỗi buổi trao đổi có 1 phòng nhóm do Admin tạo; chuyên gia là Trưởng phòng, biên tập viên là Điều phối FBV.
+- **Nhật ký nghiên cứu** (`reader/journal.html`): ghi chú, trích dẫn, tệp, ảnh, liên kết; gắn bài/chỉ số; lọc, tìm, ghim; đồng bộ nhiều thiết bị.
+- **Trợ lý nghiên cứu AI** (`reader/assistant.html`, Phase 2+ Beta): chỉ trả lời từ bài đã thẩm định, luôn trích nguồn, từ chối khuyến nghị mua/bán.
+- **Mã QR** hồ sơ chuyên gia & bài nghiên cứu · **Ảnh bìa** hồ sơ chuyên gia · **Phông/cỡ chữ trình đọc** · **Giao diện English** (Cài đặt → Ngôn ngữ).
+- Tham số demo mới: `?prem=1` (bật Phase 2 + Premium + đăng ký sẵn buổi trao đổi đang diễn ra).
+- Tài liệu: `FBV-v2\outputs\FBV_v3.2_TinhNang_Chat_FBVONE.md`.
 
 ## Phạm vi tính năng
 
@@ -44,7 +55,7 @@ Mở `index.html` bằng trình duyệt, hoặc chạy web server tĩnh:
 python -m http.server 8080   # hoặc: npx serve .
 ```
 
-- `index.html` — **Hub**: danh mục màn hình (A01–A11, W01–W02, R01–R13, L01–L03, P00–P04, C01–C16) và 10 luồng demo F1–F10.
+- `index.html` — **Hub**: danh mục màn hình (A01–A12, W01–W04, R01–R14, L01–L03, P00–P07, C01–C16) và 13 luồng demo F1–F13.
 - **Nút Demo** (chấm vàng ở mép phải; trên desktop ở góc phải dưới): đổi vai trò Khách / Độc giả / Chuyên gia / Thẩm định viên / Biên tập / Quản trị, bật **Phase 2**, đổi giao diện sáng/tối, **Reset demo**.
 - Tài khoản demo: `minhanh@example.com` — mã OTP: 6 chữ số bất kỳ.
 - Thêm `?p2=1` vào URL bất kỳ để bật Phase 2.
@@ -67,6 +78,11 @@ assets/js/market.js     Thị trường, vĩ mô & tiền tệ, chi tiết chỉ
 assets/js/account.js    Đăng nhập, hồ sơ, cài đặt, phản biện, hoạt động, pháp lý, Phase 2
 assets/js/cms.js        CMS: dashboard, soạn thảo, thẩm định, AI linking, xuất bản, phản biện, kiểm duyệt
 assets/js/workspace.js  Không gian làm việc, đăng ký chuyên gia, ghi chú/theo dõi/ghim
+assets/js/chat.js       Chat phản biện nâng cao, gọi theo lịch, phòng trao đổi kín, buổi trao đổi
+assets/js/journal.js    Nhật ký nghiên cứu
+assets/js/assistant.js  Trợ lý nghiên cứu AI (mô phỏng RAG)
+assets/js/prefs.js      Phông/cỡ chữ trình đọc, ngôn ngữ, mã QR, ảnh bìa
+assets/js/vendor/qrcode.min.js  Thư viện tạo mã QR (qrcode-generator, MIT)
 assets/js/hub.js        Hub + 404
 netlify.toml            Cấu hình deploy Netlify
 ```

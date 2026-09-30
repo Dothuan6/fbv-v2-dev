@@ -207,7 +207,10 @@
     $('#askBtn').onclick = () => { const sel = String(window.getSelection() || '').trim(); if (sel.length > 8 && !locked) { const b = selBlock(); F.openInquiry(r, sel.slice(0, 400), b); } else if (locked) F.go('reader/pricing.html?r=' + r.id); else F.toast('Bôi đen một đoạn trong bài để trích dẫn, hoặc dùng “Đặt câu hỏi về toàn bài”.', 'info'); };
     $('#more').onclick = () => F.menu([
       r.pdf ? { icon: 'pdf', label: 'Mở bản PDF', onClick: () => F.go('reader/report-pdf.html?id=' + r.id) } : null,
-      { icon: 'stickyNote', label: 'Thêm ghi chú vào Không gian làm việc', onClick: () => F.addNote(r, '') },
+      { icon: 'stickyNote', label: 'Thêm vào Nhật ký nghiên cứu', onClick: () => F.addNote(r, '') },
+      { icon: 'sparkles', label: 'Hỏi Trợ lý nghiên cứu về bài này', onClick: () => F.go('reader/assistant.html?r=' + r.id) },
+      { icon: 'textSize', label: 'Phông & cỡ chữ', onClick: () => F.readerSheet() },
+      { icon: 'qr', label: 'Mã QR bài nghiên cứu', onClick: () => F.qrReport(r) },
       { icon: 'link', label: 'Sao chép liên kết', onClick: () => { try { navigator.clipboard.writeText(location.href); } catch (x) {} F.toast('Đã sao chép liên kết'); } },
       { icon: 'user', label: 'Xem hồ sơ tác giả', onClick: () => F.go('reader/expert.html?id=' + e.id) },
       { icon: 'flag', label: 'Báo cáo nội dung', danger: true, onClick: () => F.toast('Đã gửi phản ánh tới ban biên tập FBV', 'info') }
@@ -255,12 +258,13 @@
     const v = F.shell({ bar: 'back', back: 'reader/index.html', title: '', right: `<button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
     document.title = e.name + ' · FBV';
     let tab = 'posts';
-    v.innerHTML = `<div class="prof"><div class="prof-top"><div class="t"><h1>${F.esc(e.name)}</h1><div class="h">${F.esc(e.title)}</div></div>${F.avatar(e, 'xl')}</div>
+    const mine = me && me.expertId === e.id;
+    v.innerHTML = `${F.coverBanner(e, mine)}<div class="prof has-cover"><div class="prof-top"><div class="t"><h1>${F.esc(e.name)}</h1><div class="h">${F.esc(e.title)}</div></div>${F.avatar(e, 'xl')}</div>
       <div class="meta">${e.verified ? `<span class="verified-pill">${F.vb(e)}Verified by FBV</span>` : `<span class="tag warn">${I('clock', 'i-xs')}Đang chờ FBV thẩm định</span>`}<span>${F.esc(e.org)}</span></div>
       <div class="cred-line">${(e.degrees || []).slice(0, 1).map((d) => `<span class="tag">${I('cap', 'i-xs')}${F.esc(d.name)}</span>`).join('')}${(e.certs || []).map((c) => `<span class="tag info">${I('award', 'i-xs')}${F.esc(c.name)}</span>`).join('')}</div>
       <p class="bio">${F.esc(e.bio)}</p>
       <div class="stats-row"><div><b class="num">${list.length}</b><span>Bài nghiên cứu</span></div><div><b class="num">${F.compact(F.followers(e.id))}</b><span>Người theo dõi</span></div><div><b class="num">${answered}</b><span>Phản biện đã trả lời</span></div></div>
-      <div class="btns">${F.followBtn(e, 'btn')}<button class="btn btn-gray" id="shareP">${I('share')}Chia sẻ</button></div></div>
+      <div class="btns">${F.followBtn(e, 'btn')}<button class="btn btn-gray" id="shareP">${I('share')}Chia sẻ</button><button class="btn btn-gray btn-icon" id="qrP" aria-label="Mã QR hồ sơ">${I('qr')}</button></div></div>
       <div class="utabs mt-16" id="tb"></div><div id="tv"></div>`;
     const draw = () => {
       $('#tb').innerHTML = [['posts', 'Bài nghiên cứu', list.length], ['about', 'Giới thiệu']].map((t) => `<button class="${tab === t[0] ? 'on' : ''}" data-t="${t[0]}">${t[1]}${t[2] != null ? `<span class="cnt">${t[2]}</span>` : ''}</button>`).join('');
@@ -277,7 +281,10 @@
     };
     draw();
     $('#shareP').onclick = () => F.shareSheet(e.name, location.href);
+    $('#qrP').onclick = () => F.qrExpert(e);
+    const cv = $('#cvEdit'); if (cv) cv.onclick = () => F.coverSheet(e, () => location.reload());
     $('#more').onclick = () => F.menu([
+      { icon: 'qr', label: 'Mã QR hồ sơ', onClick: () => F.qrExpert(e) },
       { icon: 'link', label: 'Sao chép liên kết hồ sơ', onClick: () => { try { navigator.clipboard.writeText(location.href); } catch (x) {} F.toast('Đã sao chép liên kết'); } },
       { icon: 'ban', label: me && me.blocked.includes(e.id) ? 'Bỏ chặn chuyên gia' : 'Chặn chuyên gia', danger: true, onClick: () => { if (!F.requireAuth()) return; const b = me.blocked; const i = b.indexOf(e.id); if (i > -1) { b.splice(i, 1); F.toast('Đã bỏ chặn'); } else { b.push(e.id); F.toast('Đã chặn. Bạn sẽ không nhận tin nhắn từ chuyên gia này.', 'info'); } F.save(); } }
     ]);
