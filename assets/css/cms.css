@@ -256,3 +256,21 @@
 .cms-body code.vn { font: 600 12px/1.4 var(--mono); color: var(--second-text); background: var(--second-soft); padding: 2px 6px; border-radius: 5px; }
 .editor-grid .thread .msg > div:last-child { min-width: 0; }
 .editor-grid .thread .rq { background: var(--bg-elev-2); }
+/* v3.2.1 — X1 lịch gọi · X2 buổi trao đổi · X3 trả lời ngang độc giả */
+.cms-body .m-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.cms-body .m-acts button { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 999px; color: var(--text-3); border: 1px solid transparent; }
+.cms-body .m-acts button:hover { background: var(--bg-elev-2); color: var(--text); }
+.cms-body .m-acts button.on { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+.cms-body .cms-reply { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; margin-bottom: 8px; border-left: 3px solid var(--accent); background: var(--bg-elev-2); border-radius: 8px; font-size: 13px; color: var(--text-2); min-width: 0; }
+.cms-body .cms-reply .grow { min-width: 0; display: flex; flex-direction: column; }
+.cms-body .cms-reply span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cms-body .cms-reply b { color: var(--text); font-size: 12.5px; }
+.cms-body .cms-pend { margin-bottom: 8px; flex-wrap: wrap; }
+.cms-body .composer .icon-btn { flex: none; align-self: flex-end; }
+.cms-body .call-adm { padding: 10px 0; border-top: 1px solid var(--line); }
+.cms-body .call-adm:first-child { border-top: 0; padding-top: 0; }
+.cms-body .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .cms-body .grid-2 { grid-template-columns: 1fr; } }
+.cms-body .thread .rq { display: block; border-left: 3px solid var(--accent); padding: 4px 8px; margin-bottom: 6px; border-radius: 6px; font-size: 12.5px; }
+
+.cms-body .mod-cover { height: 96px; max-width: 420px; border-radius: 10px; border: 1px solid var(--line); }

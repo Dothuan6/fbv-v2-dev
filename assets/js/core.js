@@ -5,7 +5,7 @@
 (function () {
   const FBV = (window.FBV = window.FBV || {});
   const KEY = 'fbv-v3-proto-db';
-  window.FBV_SEED.version = 9;
+  window.FBV_SEED.version = 10;
 
   /* ---------------- Store ---------------- */
   let DB = null;
@@ -130,7 +130,7 @@
   FBV.STREAM = { fintech: 'Fintech', macro: 'Kinh tế Vĩ mô', micro: 'Kinh tế Vi mô' };
   FBV.STREAM_S = { fintech: 'Fintech', macro: 'Vĩ mô', micro: 'Vi mô' };
   FBV.STATUS = { draft: 'Nháp', in_review: 'Chờ thẩm định', changes_requested: 'Yêu cầu chỉnh sửa', pending_approval: 'Chờ phê duyệt', scheduled: 'Đã lên lịch', published: 'Đã xuất bản', archived: 'Lưu trữ' };
-  FBV.ISTATUS = { new: 'Mới', assigned: 'Đã phân công', in_progress: 'Đang trao đổi', answered: 'Đã trả lời', closed: 'Đã đóng', reported: 'Bị bài nghiên cứu' };
+  FBV.ISTATUS = { new: 'Mới', assigned: 'Đã phân công', in_progress: 'Đang trao đổi', answered: 'Đã trả lời', closed: 'Đã đóng', reported: 'Bị báo cáo' };
   FBV.GROUP = { equity: 'Chứng khoán', rate: 'Lãi suất', fx: 'Tỷ giá & Tiền tệ', commodity: 'Hàng hóa', macro: 'Vĩ mô định kỳ' };
 
   /* ---------------- Icons (outline, 24 grid) ---------------- */
@@ -301,6 +301,7 @@
   FBV.statusBadge = (s) => `<span class="tag ${SC[s] || ''}"><span class="d"></span>${FBV.STATUS[s]}</span>`;
   FBV.iStatusBadge = (s) => `<span class="tag ${IC[s] || ''}"><span class="d"></span>${FBV.ISTATUS[s]}</span>`;
   FBV.premiumBadge = () => (FBV.session().phase2 ? `<span class="tag prem">${FBV.icon('crown', 'i-xs')}Premium</span>` : '');
+  FBV.maskNo = (no) => { const x = String(no || ''); if (x.length <= 4) return '••••'; const keep = Math.min(4, Math.floor(x.length / 3)); return x.slice(0, keep) + '•'.repeat(Math.max(3, x.length - keep - 2)) + x.slice(-2); };
   FBV.empty = (icon, title, text, action) => `<div class="empty"><div class="ico">${FBV.icon(icon)}</div><h3>${title}</h3><p>${text}</p>${action || ''}</div>`;
   FBV.srcNote = (text) => `<div class="delay-note">${FBV.icon('info')}<span>${text}</span></div>`;
 

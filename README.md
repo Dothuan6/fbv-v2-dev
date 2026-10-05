@@ -35,6 +35,23 @@ Toàn bộ số liệu là **minh họa**. Trạng thái demo được lưu tron
 - Tham số demo mới: `?prem=1` (bật Phase 2 + Premium + đăng ký sẵn buổi trao đổi đang diễn ra).
 - Tài liệu: `FBV-v2\outputs\FBV_v3.2_TinhNang_Chat_FBVONE.md`.
 
+## Cập nhật v3.2.1 (01/10/2026)
+
+- **Lịch gọi phía chuyên gia:** xác nhận / đổi giờ / từ chối lịch gọi 1:1 trong Workspace chuyên gia và CMS; độc giả đồng ý giờ mới ngay trong phiên.
+- **CMS Buổi trao đổi kín** (`cms/sessions.html`, `cms/session.html`): Quản trị tạo/sửa/hủy buổi, phòng kín tạo tự động, thêm/bớt thành viên, gửi thông báo vào phòng.
+- **CMS trả lời phản biện:** trả lời trích dẫn, phản hồi học thuật, sao chép, đính kèm file/ảnh.
+- Số hiệu chứng chỉ được che một phần trên hồ sơ công khai.
+
+## Cập nhật v3.3 (05/10/2026) — bổ sung theo tiêu chí App Store
+
+- **An toàn nội dung (1.2):** bộ lọc từ ngữ/quảng cáo/khuyến nghị mua bán trước khi gửi (phản biện, chat, phòng, hồ sơ, câu hỏi AI, trả lời của chuyên gia); kiểm duyệt ảnh tải lên; báo cáo hồ sơ chuyên gia, báo cáo trong cuộc gọi; chặn thành viên trong phòng; điều phối viên tắt tiếng, mời ra, gỡ tin; CMS Kiểm duyệt xử lý mọi loại nội dung và cảnh báo quá 24 giờ.
+- **Quyền hệ thống (4.5.4, 5.1.1):** giải thích trước khi xin quyền thông báo, hộp thoại quyền micrô/camera có mục đích rõ, ẩn nội dung xem trước của thông báo, thông báo tiếp thị có công tắc riêng (mặc định tắt).
+- **Dữ liệu cá nhân (5.1.1, 5.1.2):** đồng ý gửi câu hỏi tới AI bên thứ ba (rút lại được), đồng ý xử lý dữ liệu hồ sơ chuyên gia + rút hồ sơ, ảnh bìa tải lên chờ FBV duyệt, chính sách bảo mật nêu thời hạn lưu.
+- **Thuê bao (3.1.2):** khối thông tin thuê bao trên màn mua (giá theo gói, tự gia hạn, cách hủy) kèm link EULA và Chính sách bảo mật.
+- **Dữ liệu thị trường:** cảnh báo khi nguồn gián đoạn (hiện giá trị gần nhất), màn "Nguồn & điều kiện sử dụng dữ liệu".
+- **English:** dịch thêm ~200 chuỗi giao diện ở các màn chính.
+- Tệp mới: `assets/js/safety.js`.
+
 ## Phạm vi tính năng
 
 **MVP v1.0**
@@ -55,7 +72,7 @@ Mở `index.html` bằng trình duyệt, hoặc chạy web server tĩnh:
 python -m http.server 8080   # hoặc: npx serve .
 ```
 
-- `index.html` — **Hub**: danh mục màn hình (A01–A12, W01–W04, R01–R14, L01–L03, P00–P07, C01–C16) và 13 luồng demo F1–F13.
+- `index.html` — **Hub**: danh mục màn hình (A01–A13, W01–W04, R01–R14, L01–L03, P00–P07, C01–C18) và 15 luồng demo F1–F15.
 - **Nút Demo** (chấm vàng ở mép phải; trên desktop ở góc phải dưới): đổi vai trò Khách / Độc giả / Chuyên gia / Thẩm định viên / Biên tập / Quản trị, bật **Phase 2**, đổi giao diện sáng/tối, **Reset demo**.
 - Tài khoản demo: `minhanh@example.com` — mã OTP: 6 chữ số bất kỳ.
 - Thêm `?p2=1` vào URL bất kỳ để bật Phase 2.
@@ -76,6 +93,8 @@ assets/js/shell.js      App shell (appbar, tab bar, sidebar) + card dùng chung
 assets/js/reader.js     Feed, tìm kiếm, trình đọc, PDF, chuyên gia, thư viện
 assets/js/market.js     Thị trường, vĩ mô & tiền tệ, chi tiết chỉ số
 assets/js/account.js    Đăng nhập, hồ sơ, cài đặt, phản biện, hoạt động, pháp lý, Phase 2
+assets/js/safety.js     Lọc nội dung, báo cáo dùng chung, quyền hệ thống (thông báo/micrô/camera), đồng ý AI
+assets/js/cms-v32.js    CMS v3.2.1–3.3: kiểm duyệt mọi loại nội dung, phiên phản biện (lịch gọi, trả lời kèm tệp), buổi trao đổi kín
 assets/js/cms.js        CMS: dashboard, soạn thảo, thẩm định, AI linking, xuất bản, phản biện, kiểm duyệt
 assets/js/workspace.js  Không gian làm việc, đăng ký chuyên gia, ghi chú/theo dõi/ghim
 assets/js/chat.js       Chat phản biện nâng cao, gọi theo lịch, phòng trao đổi kín, buổi trao đổi

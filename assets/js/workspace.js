@@ -54,12 +54,14 @@
           <p class="hint mt-8">Soạn thảo và gửi thẩm định trên CMS web (tối ưu cho máy tính). Quy trình: Soạn thảo → FBV Review → Phê duyệt xuất bản.</p>
           ${secH('Hộp phản biện', `<a href="#" data-cms="cms/inquiries.html">Mở tất cả</a>`)}
           <div class="group">${inq.length ? inq.slice(0, 4).map((q) => { const h = (new Date(q.slaDue) - Date.now()) / 36e5; const u = F.user(q.reader); return `<a class="gi" href="#" data-cms="cms/inquiry.html?id=${q.id}">${F.avatar(u, 'sm')}<span class="gl" style="font-weight:600">${F.esc(u.name)}<small class="ellipsis">“${F.esc(q.quote)}”</small></span><span class="tag ${h < 0 ? 'bad' : h < 24 ? 'warn' : 'ok'}">${h < 0 ? 'Quá ' + Math.ceil(-h) + 'h' : 'Còn ' + Math.ceil(h) + 'h'}</span></a>`; }).join('') : `<div class="gi noicon"><span class="gl muted" style="font-weight:500">Không có phiên nào chờ trả lời.</span></div>`}</div>
+          ${F.expertCallsSection ? F.expertCallsSection(ex) : ''}
           ${secH('Hồ sơ chuyên gia')}
           <div class="panel"><div class="row"><span class="grow"><b>Hồ sơ hoàn thiện ${Math.round((verified / Math.max(1, creds)) * 100)}%</b><div class="small muted mt-4">${(ex.degrees || []).length} học vị · ${(ex.certs || []).length} chứng chỉ · ${verified}/${creds} đã xác minh</div></span>${ex.verified ? `<span class="verified-pill">${F.vb(ex)}Verified</span>` : '<span class="tag warn">Chờ xác minh</span>'}</div>
             <div class="quota mt-12"><span class="bar"><i style="width:${Math.round((verified / Math.max(1, creds)) * 100)}%"></i></span></div>
             <div class="row mt-12" style="gap:8px"><a class="btn btn-gray btn-sm grow" href="${F.url('reader/expert.html?id=' + ex.id)}">Xem hồ sơ công khai</a><a class="btn btn-gray btn-sm grow" href="${F.url('reader/expert-apply.html?mode=update')}">Bổ sung chứng chỉ</a><button class="btn btn-gray btn-sm btn-icon" id="wqr" aria-label="Mã QR hồ sơ">${I('qr')}</button></div></div>`;
         $$('#sf [data-f]').forEach((b) => (b.onclick = () => { f = b.dataset.f; html(); }));
         const wq = $('#wqr'); if (wq) wq.onclick = () => F.qrExpert(ex);
+        if (F.bindCallActions) F.bindCallActions($('#wb'), () => html());
       };
       html();
     };
@@ -89,6 +91,8 @@
     draw();
   };
 
+  F.dataConsentSheet = () => F.modal({ title: 'Xử lý dữ liệu hồ sơ chuyên gia', body: `<div class="group plain">${[['Dữ liệu thu thập', 'Họ tên, chức danh, đơn vị, số điện thoại, bằng cấp, chứng chỉ, kinh nghiệm, bài mẫu'], ['Mục đích', 'Chỉ để thẩm định và cấp vai trò Chuyên gia'], ['Ai được xem', 'Hội đồng FBV Review và Quản trị FBV'], ['Hiển thị công khai', 'Tên, chức danh, đơn vị, học vị, chứng chỉ (số hiệu che một phần)'], ['Thời gian lưu', 'Trong thời gian là chuyên gia; hồ sơ bị từ chối/rút: xóa trong 30 ngày'], ['Quyền của bạn', 'Rút hồ sơ, yêu cầu sửa/xóa bất cứ lúc nào']].map((x) => `<div class="gi noicon" style="align-items:flex-start"><span class="gl" style="flex:0 0 38%">${x[0]}</span><span class="gv" style="white-space:normal;text-align:right">${x[1]}</span></div>`).join('')}</div><p class="hint mt-8">Tệp được mã hóa khi truyền và lưu trữ. FBV không dùng dữ liệu này cho quảng cáo và không chia sẻ cho bên thứ ba ngoài mục đích xác minh với đơn vị cấp bằng. <a class="link" href="${F.url('reader/privacy.html')}">Chính sách bảo mật</a></p>`, actions: [{ label: 'Đã hiểu', cls: 'btn-primary' }] });
+
   /* ================= A10 · Đăng ký chuyên gia ================= */
   const DEG = ['Cử nhân', 'Thạc sĩ', 'Tiến sĩ', 'Phó Giáo sư', 'Giáo sư'];
   const CERTS = ['CFA', 'ACCA', 'CPA', 'FRM', 'CFP', 'CMA', 'CCHN chứng khoán (UBCKNN)', 'CCHN thẩm định giá'];
@@ -110,7 +114,10 @@
         <div class="timeline-v">${steps.map((s, k) => `<div class="tv ${k <= idx ? 'on' : ''}"><span class="d">${k < idx || app.status === 'approved' ? I('check') : k + 1}</span><div><b>${s[1]}</b>${k === idx && app.status !== 'approved' ? `<small>${F.APP_STATUS[app.status]}</small>` : ''}</div></div>`).join('')}</div>
         <div><div class="group-title">Tóm tắt hồ sơ</div><div class="group plain"><div class="gi noicon"><span class="gl">Chức danh</span><span class="gv">${F.esc(app.title)}</span></div><div class="gi noicon"><span class="gl">Đơn vị</span><span class="gv">${F.esc(app.org)}</span></div><div class="gi noicon"><span class="gl">Học vị</span><span class="gv">${app.degrees.length}</span></div><div class="gi noicon"><span class="gl">Chứng chỉ</span><span class="gv">${app.certs.length}</span></div></div></div>
         <div><div class="group-title">Lịch sử</div><div class="group plain">${app.log.map((l) => `<div class="gi noicon"><span class="gl" style="font-weight:500">${F.esc(l.x)}</span><span class="gv">${F.date(l.at, true)}</span></div>`).join('')}</div></div>
-        ${['need_info', 'rejected'].includes(app.status) ? `<a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/expert-apply.html?edit=1')}">${app.status === 'need_info' ? 'Bổ sung hồ sơ' : 'Nộp lại hồ sơ'}</a>` : app.status === 'approved' ? `<a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/workspace.html')}">Mở Không gian làm việc</a>` : ''}</div>`;
+        ${['need_info', 'rejected'].includes(app.status) ? `<a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/expert-apply.html?edit=1')}">${app.status === 'need_info' ? 'Bổ sung hồ sơ' : 'Nộp lại hồ sơ'}</a>` : app.status === 'approved' ? `<a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/workspace.html')}">Mở Không gian làm việc</a>` : ''}
+        ${['submitted', 'reviewing', 'need_info', 'rejected'].includes(app.status) ? `<button class="btn btn-ghost btn-block" id="wd">Rút hồ sơ & xóa tệp đã nộp</button>` : ''}<button class="btn-text small" id="dpv" style="align-self:center">Dữ liệu hồ sơ được xử lý thế nào?</button></div>`;
+      $('#dpv').onclick = () => F.dataConsentSheet();
+      const wd = $('#wd'); if (wd) wd.onclick = () => F.confirm('Rút hồ sơ chuyên gia?', 'FBV sẽ dừng thẩm định và xóa toàn bộ tệp bằng cấp, chứng chỉ bạn đã nộp trong vòng 30 ngày. Bạn có thể nộp lại sau.', 'Rút hồ sơ', 'btn-danger', () => { D.applications = D.applications.filter((a) => a.id !== app.id); F.save(); F.toast('Đã rút hồ sơ · tệp đã nộp sẽ được xóa', 'info'); setTimeout(() => F.go('reader/workspace.html'), 500); });
       return;
     }
     // Form nhiều bước
@@ -132,7 +139,7 @@
         <div class="field"><label for="a_ln">Liên kết (LinkedIn, Google Scholar, trang cá nhân)</label><input class="input" id="a_ln" value="${F.esc(f.links.join(', '))}" placeholder="Phân cách bằng dấu phẩy"></div>
         <div class="field"><span class="label">Bài nghiên cứu mẫu</span><label class="upload-box">${I('upload')}<span>${f.sample ? F.esc(f.sample) : 'Tải lên 1 bài nghiên cứu/bài báo tiêu biểu (PDF, ≤ 20 MB)'}</span><input type="file" id="a_sm" accept="application/pdf"></label></div></div>`;
       else body = `<div class="stack"><div class="group plain"><div class="gi noicon"><span class="gl">Họ tên</span><span class="gv">${F.esc(f.name)}</span></div><div class="gi noicon"><span class="gl">Chức danh</span><span class="gv">${F.esc(f.title || '—')}</span></div><div class="gi noicon"><span class="gl">Đơn vị</span><span class="gv">${F.esc(f.org || '—')}</span></div><div class="gi noicon"><span class="gl">Lĩnh vực</span><span class="gv">${f.fields.map((x) => F.STREAM_S[x]).join(', ')}</span></div><div class="gi noicon"><span class="gl">Học vị · Chứng chỉ · Kinh nghiệm</span><span class="gv">${f.degrees.length} · ${f.certs.length} · ${f.exp.length}</span></div></div>
-        <div class="group" style="padding:4px 0">${[['k1', 'Thông tin tôi cung cấp là trung thực; tôi đồng ý để FBV xác minh với đơn vị cấp bằng/chứng chỉ.'], ['k2', 'Tôi công khai mọi xung đột lợi ích liên quan đến nội dung nghiên cứu.'], ['k3', 'Tôi không đưa ra khuyến nghị mua/bán tài sản cụ thể trên FBV.'], ['k4', 'Tôi đồng ý với Quy chế chuyên gia và quy trình thẩm định học thuật FBV Review.']].map((k) => `<label class="gi noicon"><input type="checkbox" id="${k[0]}"><span class="gl" style="font-weight:500">${k[1]}</span></label>`).join('')}</div></div>`;
+        <div class="group" style="padding:4px 0">${[['k1', 'Thông tin tôi cung cấp là trung thực; tôi đồng ý để FBV xác minh với đơn vị cấp bằng/chứng chỉ.'], ['k2', 'Tôi công khai mọi xung đột lợi ích liên quan đến nội dung nghiên cứu.'], ['k3', 'Tôi không đưa ra khuyến nghị mua/bán tài sản cụ thể trên FBV.'], ['k4', 'Tôi đồng ý với Quy chế chuyên gia và quy trình thẩm định học thuật FBV Review.'], ['k5', 'Tôi đồng ý để FBV xử lý dữ liệu cá nhân và tệp bằng cấp, chứng chỉ trong hồ sơ này cho mục đích thẩm định. <a class="link" href="#" id="dpc">Xem chi tiết</a>']].map((k) => `<label class="gi noicon"><input type="checkbox" id="${k[0]}"><span class="gl" style="font-weight:500">${k[1]}</span></label>`).join('')}</div></div>`;
       v.innerHTML = `<div class="steps" style="padding-top:8px">${STEPS.map((s, k) => `<i class="${k <= step ? 'on' : ''}"></i>`).join('')}</div><div class="page" style="padding-top:14px;padding-bottom:150px"><div class="small faint">Bước ${step + 1}/${STEPS.length}</div><h2 class="serif" style="font-size:26px;margin:4px 0 16px">${['Thông tin chuyên gia', 'Học vị & bằng cấp', 'Chứng chỉ chuyên môn', 'Kinh nghiệm & công trình', 'Cam kết & gửi hồ sơ'][step]}</h2>${app && app.status === 'need_info' ? `<div class="note warn mb-16">${I('alert')}<span>${F.esc(app.note)}</span></div>` : ''}${body}</div>
         <div class="bottom-cta"><div class="inner"><button class="btn btn-primary btn-pill btn-block" id="nx">${step < STEPS.length - 1 ? 'Tiếp tục' : 'Gửi hồ sơ để thẩm định'}</button>${step ? '<button class="btn btn-ghost btn-block" id="pv">Quay lại</button>' : ''}</div></div>`;
       bind();
@@ -146,7 +153,8 @@
       if (step === 0) { if (f.name.length < 4 || f.title.length < 4 || f.org.length < 2) { F.toast('Vui lòng nhập họ tên, chức danh và đơn vị công tác', 'error'); return false; } if (!f.fields.length) { F.toast('Chọn ít nhất 1 lĩnh vực chuyên môn', 'error'); return false; } }
       if (step === 1 && !f.degrees.length) { F.toast('Cần ít nhất 1 học vị/bằng cấp kèm minh chứng', 'error'); return false; }
       if (step === 3 && f.bio.length < 40) { F.toast('Giới thiệu chuyên môn tối thiểu 40 ký tự', 'error'); return false; }
-      if (step === 4 && !['k1', 'k2', 'k3', 'k4'].every((k) => $('#' + k).checked)) { F.toast('Vui lòng xác nhận đủ 4 cam kết', 'error'); return false; }
+      if (step === 4 && !['k1', 'k2', 'k3', 'k4', 'k5'].every((k) => $('#' + k).checked)) { F.toast('Vui lòng xác nhận đủ 5 cam kết, gồm đồng ý xử lý dữ liệu', 'error'); return false; }
+      if (step === 3 && F.blockedText && F.blockedText(f.bio, 'Phần giới thiệu chuyên môn')) return false;
       return true;
     };
     const itemSheet = (kind) => {
@@ -169,6 +177,7 @@
       [['addDeg', 'deg'], ['addCert', 'cert'], ['addExp', 'exp']].forEach(([id, k]) => { const b = $('#' + id); if (b) b.onclick = () => { collect(); itemSheet(k); }; });
       const bio = $('#a_bio'); if (bio) bio.oninput = () => { $('#bc').textContent = bio.value.length + '/600'; };
       const sm = $('#a_sm'); if (sm) sm.onchange = () => { f.sample = sm.files[0] ? sm.files[0].name : 'bai-mau.pdf'; draw(); };
+      const dpc = $('#dpc'); if (dpc) dpc.onclick = (ev) => { ev.preventDefault(); F.dataConsentSheet(); };
       const pv = $('#pv'); if (pv) pv.onclick = () => { collect(); step--; draw(); window.scrollTo(0, 0); };
       $('#nx').onclick = () => {
         collect(); if (!validate()) return;

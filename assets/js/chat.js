@@ -67,7 +67,8 @@
     const mine = m.by === ctx.meId; const p = F.person(m.by);
     const name = ctx.showName && !mine ? `<div class="mn">${esc(p.name)}${ctx.roleOf ? ctx.roleOf(m.by) : ''}</div>` : '';
     let body;
-    if (m.recalled) body = `<div class="bub recalled">${I('undo', 'i-xs')}${mine ? 'Bạn đã thu hồi một tin nhắn' : 'Tin nhắn đã được thu hồi'}</div>`;
+    if (m.removed) body = `<div class="bub recalled">${I('shield', 'i-xs')}Tin nhắn đã bị điều phối viên gỡ do vi phạm quy tắc</div>`;
+    else if (m.recalled) body = `<div class="bub recalled">${I('undo', 'i-xs')}${mine ? 'Bạn đã thu hồi một tin nhắn' : 'Tin nhắn đã được thu hồi'}</div>`;
     else {
       const hid = m.x && m.x.startsWith('[Nội dung đã bị ẩn');
       const t = m.re != null ? ctx.msgs[m.re] : null;
@@ -75,13 +76,15 @@
       const files = (m.files || []).map((f, k) => F.attHtml(f, i, k)).join('');
       body = `<div class="bub ${hid ? 'hid' : ''} ${files ? 'has-att' : ''}" data-mi="${i}" tabindex="0" role="button" aria-haspopup="dialog">${rq}${m.x ? `<div class="bt">${fmtText(m.x, ctx.term)}</div>` : ''}${files ? `<div class="atts">${files}</div>` : ''}</div>`;
     }
-    return `<div class="msg ${mine ? 'me' : 'them'}" id="m${i}">${mine ? '' : F.avatar(p, 'sm')}<div class="mc">${name}${body}${m.recalled ? '' : rxRow(m, i, ctx)}<div class="tm">${time(m.at)}</div></div></div>`;
+    return `<div class="msg ${mine ? 'me' : 'them'}" id="m${i}">${mine ? '' : F.avatar(p, 'sm')}<div class="mc">${name}${body}${m.recalled || m.removed ? '' : rxRow(m, i, ctx)}<div class="tm">${time(m.at)}</div></div></div>`;
   };
   const callCard = (c, ctx) => {
     const ic = c.kind === 'video' ? 'video' : 'phoneCall'; const kl = c.kind === 'video' ? 'Cuộc gọi video' : 'Cuộc gọi thoại';
     const st = new Date(c.at).getTime(); const end = st + (c.len || 30) * MIN;
     if (c.status === 'scheduled' && Date.now() > end) c.status = 'missed';
     if (c.status === 'done') return `<div class="call-card"><span class="ci">${I(ic)}</span><div class="grow"><b>${kl} theo lịch hẹn</b><small>${dur(c.dur)} · ${time(c.at)}${c.note ? ' · ' + esc(c.note) : ''}</small></div>${ctx.canBook ? `<button class="btn btn-gray btn-xs" data-rebook="${c.kind}">Đặt lịch lại</button>` : ''}</div>`;
+    if (c.status === 'declined') return `<div class="call-card off"><span class="ci">${I('x')}</span><div class="grow"><b>Chuyên gia chưa nhận lịch ${kl.toLowerCase()}</b><small>${whenLabel(c.at)}${c.reason ? '<br>Lý do: ' + esc(c.reason) : ''}</small></div>${ctx.canBook ? `<button class="btn btn-gray btn-xs" data-rebook="${c.kind}">Đặt lịch khác</button>` : ''}</div>`;
+    if (c.status === 'scheduled' && c.proposed) return `<div class="call-card sched prop"><span class="ci">${I('calendar')}</span><div class="grow"><b>Chuyên gia đề xuất giờ khác</b><small><s>${whenLabel(c.at)}</s> → <b class="hl">${whenLabel(c.proposed)}</b>${c.reason ? '<br>' + esc(c.reason) : ''}</small></div><button class="btn btn-primary btn-xs" data-cok="${c.id}">Đồng ý</button><button class="icon-btn sm" data-cx="${c.id}" aria-label="Hủy lịch">${I('x')}</button></div>`;
     if (c.status === 'missed' || c.status === 'cancelled') return `<div class="call-card off"><span class="ci">${I(c.status === 'missed' ? 'phoneOff' : 'x')}</span><div class="grow"><b>${c.status === 'missed' ? 'Đã lỡ ' + kl.toLowerCase() + ' đã hẹn' : 'Đã hủy lịch ' + kl.toLowerCase()}</b><small>${whenLabel(c.at)}</small></div>${ctx.canBook ? `<button class="btn btn-gray btn-xs" data-rebook="${c.kind}">Đặt lịch lại</button>` : ''}</div>`;
     const open = Date.now() >= st - 10 * MIN && Date.now() <= end;
     return `<div class="call-card sched ${open ? 'live' : ''}"><span class="ci">${I(ic)}</span><div class="grow"><b>${open ? kl + ' đang mở' : 'Lịch ' + kl.toLowerCase()} · ${c.len || 30} phút</b><small>${whenLabel(c.at)}${c.confirmed === false ? ' · Chờ chuyên gia xác nhận' : ' · Đã xác nhận'}${c.note ? '<br>' + esc(c.note) : ''}</small></div>${open ? `<a class="btn btn-primary btn-xs" href="${F.url('reader/call.html?q=' + ctx.qid + '&c=' + c.id)}">${I(ic, 'i-xs')}Tham gia</a>` : `<button class="icon-btn sm" data-ccal="${c.id}" aria-label="Thêm vào lịch">${I('calendar')}</button><button class="icon-btn sm" data-cx="${c.id}" aria-label="Hủy lịch">${I('x')}</button>`}</div>`;
@@ -98,18 +101,19 @@
     });
     return out;
   };
-  const msgItems = (msgs, meId, hideBefore) => msgs.map((m, i) => ({ k: 'm', m, i, at: m.at })).filter((it) => !(it.m.hideFor || []).includes(meId) && !(hideBefore && new Date(it.at) <= new Date(hideBefore)));
+  const msgItems = (msgs, meId, hideBefore, blocked) => msgs.map((m, i) => ({ k: 'm', m, i, at: m.at })).filter((it) => !(it.m.hideFor || []).includes(meId) && !(hideBefore && new Date(it.at) <= new Date(hideBefore)) && !(blocked && blocked.includes(it.m.by)));
 
   /* ---------------- Menu tin nhắn (A1–A4) ---------------- */
   const msgMenu = (i, ctx) => {
-    const m = ctx.msgs[i]; if (!m || m.recalled) return;
+    const m = ctx.msgs[i]; if (!m || m.recalled || m.removed) return;
     const mine = m.by === ctx.meId; const age = (Date.now() - new Date(m.at)) / MIN; const canRecall = mine && age <= RECALL_MIN;
     const items = [
       ctx.canWrite ? { icon: 'reply', label: 'Trả lời', on: () => ctx.onReply(i) } : null,
       m.x ? { icon: 'copy', label: 'Sao chép', on: () => copy(m.x) } : null,
       canRecall ? { icon: 'undo', label: `Thu hồi với mọi người · còn ${Math.max(1, Math.ceil(RECALL_MIN - age))} phút`, on: () => { m.recalled = true; m.recalledAt = now(); F.save(); ctx.redraw(); F.toast('Đã thu hồi tin nhắn'); } } : null,
       { icon: 'eyeOff', label: 'Xóa phía tôi', danger: true, on: () => { m.hideFor = (m.hideFor || []).concat(ctx.meId); F.save(); ctx.redraw(); F.toast('Đã xóa tin nhắn ở phía bạn', 'info'); } },
-      !mine && ctx.onReport ? { icon: 'flag', label: 'Báo cáo tin nhắn', danger: true, on: () => ctx.onReport(m) } : null
+      !mine && ctx.onReport ? { icon: 'flag', label: 'Báo cáo tin nhắn', danger: true, on: () => ctx.onReport(m) } : null,
+      !mine && ctx.onBlockUser && ctx.canBlock(m.by) ? { icon: 'ban', label: 'Chặn ' + (F.person(m.by).short || F.person(m.by).name), danger: true, on: () => ctx.onBlockUser(m.by) } : null
     ].filter(Boolean);
     const pick = !mine && ctx.canWrite ? `<div class="rx-pick">${RX.map((r) => `<button type="button" class="${(m.rx || {})[ctx.meId] === r[0] ? 'on' : ''}" data-pk="${r[0]}"><span class="e">${r[1]}</span><span>${r[2]}</span></button>`).join('')}</div>` : '';
     F.modal({ title: 'Tin nhắn', body: `<div class="msg-peek">${esc(preview(m)).slice(0, 160)}</div>${pick}<div class="menu-list">${items.map((it, k) => `<button data-mm="${k}" class="${it.danger ? 'danger' : ''}">${I(it.icon)}<span>${it.label}</span></button>`).join('')}</div>${mine && !canRecall ? `<p class="hint mt-8">Chỉ thu hồi được trong ${RECALL_MIN} phút sau khi gửi. “Xóa phía tôi” chỉ ẩn trên thiết bị của bạn — FBV vẫn lưu nội dung để phục vụ kiểm duyệt.</p>` : mine ? `<p class="hint mt-8">Tin nhắn thu hồi vẫn được lưu trong nhật ký kiểm duyệt của FBV.</p>` : ''}`,
@@ -128,13 +132,13 @@
   /* ---------------- Ô soạn tin (A1 trả lời · A5 đính kèm) ---------------- */
   const composerHtml = (ph) => `<div class="composer cx" id="cmpBox"><div class="inner col"><div class="reply-bar" id="rbar" hidden></div><div class="pend" id="pend" hidden></div>
     <div class="row-in"><button type="button" class="c-att" id="att" aria-label="Đính kèm tệp hoặc ảnh">${I('paperclip')}</button><textarea id="tx" rows="1" placeholder="${ph}" maxlength="1500" aria-label="Nội dung"></textarea><button type="button" class="send" id="snd" disabled aria-label="Gửi">${I('send')}</button></div>
-    <input type="file" id="fin" hidden></div></div>`;
+    <input type="file" id="fin" hidden aria-label="Chọn tệp đính kèm"></div></div>`;
   const dock = () => { const c = $('#cmpBox') || $('.composer-closed'); document.body.style.setProperty('--dock', (c ? c.offsetHeight : 0) + 'px'); };
   const bindComposer = (ctx) => {
     const tx = $('#tx'); if (!tx) return null; let reply = null; const pend = [];
     const upd = () => { $('#snd').disabled = pend.some((p) => p.scan === 'pending') || !(tx.value.trim().length >= 2 || pend.length); dock(); };
     const drawReply = () => { const rb = $('#rbar'); if (reply == null) { rb.hidden = true; rb.innerHTML = ''; } else { const m = ctx.msgs[reply]; rb.hidden = false; rb.innerHTML = `${I('reply', 'i-sm')}<div class="grow"><b>Trả lời ${esc(m.by === ctx.meId ? 'chính bạn' : F.person(m.by).name)}</b><span class="ellipsis">${esc(preview(m))}</span></div><button type="button" class="icon-btn sm" id="rbx" aria-label="Hủy trả lời">${I('x')}</button>`; $('#rbx').onclick = () => { reply = null; drawReply(); }; } upd(); };
-    const drawPend = () => { const p = $('#pend'); p.hidden = !pend.length; p.innerHTML = pend.map((f, k) => `<span class="pchip ${f.scan}">${f.kind === 'image' ? (f.data ? `<img src="${f.data}" alt="">` : I('image', 'i-xs')) : I('file', 'i-xs')}<span class="ellipsis">${esc(f.name)}</span><small>${f.scan === 'pending' ? 'Đang quét virus…' : fmtSize(f.size)}</small><button type="button" data-rk="${k}" aria-label="Bỏ tệp">${I('x', 'i-xs')}</button></span>`).join(''); $$('[data-rk]', p).forEach((b) => (b.onclick = () => { pend.splice(+b.dataset.rk, 1); drawPend(); })); upd(); };
+    const drawPend = () => { const p = $('#pend'); p.hidden = !pend.length; p.innerHTML = pend.map((f, k) => `<span class="pchip ${f.scan}">${f.kind === 'image' ? (f.data ? `<img src="${f.data}" alt="">` : I('image', 'i-xs')) : I('file', 'i-xs')}<span class="ellipsis">${esc(f.name)}</span><small>${f.scan === 'pending' ? (f.kind === 'image' ? 'Đang kiểm duyệt ảnh…' : 'Đang quét virus…') : fmtSize(f.size)}</small><button type="button" data-rk="${k}" aria-label="Bỏ tệp">${I('x', 'i-xs')}</button></span>`).join(''); $$('[data-rk]', p).forEach((b) => (b.onclick = () => { pend.splice(+b.dataset.rk, 1); drawPend(); })); upd(); };
     tx.addEventListener('input', () => { tx.style.height = 'auto'; tx.style.height = Math.min(140, tx.scrollHeight) + 'px'; upd(); });
     tx.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) { e.preventDefault(); if (!$('#snd').disabled) $('#snd').click(); } });
     const fin = $('#fin');
@@ -146,12 +150,14 @@
       if (!EXT[kind].includes(ext)) { F.toast('Định dạng .' + ext + ' không được hỗ trợ', 'error'); return; }
       if (f.size > LIM[kind]) { F.toast('Tệp vượt quá ' + (kind === 'image' ? '5' : '10') + ' MB', 'error'); return; }
       if (pend.length >= 5) { F.toast('Tối đa 5 tệp mỗi tin nhắn', 'error'); return; }
+      if (!ctx.noFilter && F.blockedFile && F.blockedFile(f.name)) { F.modal({ title: 'Tệp không qua kiểm duyệt', body: `<div class="note warn">${I('shield')}<span>Hệ thống kiểm duyệt tự động phát hiện tệp có thể chứa nội dung không phù hợp nên chưa cho gửi. Nếu bạn cho rằng đây là nhầm lẫn, hãy liên hệ Hỗ trợ.</span></div>`, actions: [{ label: 'Đã hiểu', cls: 'btn-primary' }] }); return; }
       const item = { name: f.name, size: f.size, kind, scan: 'pending' }; pend.push(item); drawPend();
       const done = () => setTimeout(() => { item.scan = 'ok'; drawPend(); }, 800);
       if (kind === 'image') thumb(f).then((d) => { item.data = d; done(); }, done); else done();
     };
     $('#snd').onclick = () => {
       const x = tx.value.trim(); if (x.length < 2 && !pend.length) return;
+      if (!ctx.noFilter && x && F.blockedText && F.blockedText(x, 'Tin nhắn')) return;
       const m = { by: ctx.meId, at: now(), x };
       if (reply != null) m.re = reply;
       if (pend.length) m.files = pend.map((f) => ({ name: f.name, size: f.size, kind: f.kind, scan: 'ok', data: f.data }));
@@ -203,13 +209,14 @@
   };
 
   /* ---------------- Báo cáo 1 tin nhắn ---------------- */
-  const reportMsg = (refType, ref, m) => F.modal({ title: 'Báo cáo tin nhắn', body: `<div class="msg-peek">${esc(preview(m)).slice(0, 200)}</div><div class="group">${['Ngôn từ xúc phạm / quấy rối', 'Spam hoặc quảng cáo', 'Khuyến nghị mua/bán trái quy định', 'Khác'].map((x, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${x}</span><input type="radio" name="rm" value="${x}" ${i ? '' : 'checked'}></label>`).join('')}</div>`,
+  const reportMsg = (refType, ref, m) => (F.reportSheet ? F.reportSheet({ type: refType, ref, target: m.by, what: preview(m), title: 'Báo cáo tin nhắn' }) : 0);
+  const reportMsgOld = (refType, ref, m) => F.modal({ title: 'Báo cáo tin nhắn', body: `<div class="msg-peek">${esc(preview(m)).slice(0, 200)}</div><div class="group">${['Ngôn từ xúc phạm / quấy rối', 'Spam hoặc quảng cáo', 'Khuyến nghị mua/bán trái quy định', 'Khác'].map((x, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${x}</span><input type="radio" name="rm" value="${x}" ${i ? '' : 'checked'}></label>`).join('')}</div>`,
     actions: [{ label: 'Hủy' }, { label: 'Gửi báo cáo', cls: 'btn-danger', onClick: (c, el) => { F.db().moderation.unshift({ id: F.uid('m'), type: refType, ref, reporter: F.me().id, target: m.by, reason: $('input[name=rm]:checked', el).value, detail: 'Tin nhắn: “' + preview(m).slice(0, 180) + '”', status: 'open', createdAt: now() }); F.save(); F.toast('Đã gửi báo cáo tới đội kiểm duyệt FBV'); } }] });
 
   /* ---------------- Đặt lịch gọi 1:1 (B1 · Phase 2 · Premium) ---------------- */
   const slots = () => { const d = (days, h, m) => { const x = new Date(); x.setDate(x.getDate() + days); x.setHours(h, m || 0, 0, 0); return x; }; return [d(1, 20), d(2, 9), d(3, 20, 30), d(5, 14)]; };
   const bookCall = (q, e, after, kind0) => {
-    if (!F.hasSub()) { F.modal({ title: 'Gọi 1:1 theo lịch hẹn', body: `<div class="stack"><div class="empty" style="padding:4px 0"><div class="ico">${I('phoneCall')}</div><h3>Đặc quyền Premium</h3><p>Hội viên Premium có thể đặt lịch gọi thoại hoặc video 15–30 phút với chuyên gia để trao đổi sâu về bài nghiên cứu.</p></div><div class="note">${I('info')}<span>FBV không hỗ trợ gọi tự do. Cuộc gọi chỉ mở trong khung giờ đã hẹn và chuyên gia xác nhận.</span></div></div>`, actions: [{ label: 'Để sau' }, { label: 'Xem gói Premium', cls: 'btn-primary', onClick: () => F.go('reader/pricing.html') }] }); return; }
+    if (!F.hasSub()) { F.modal({ title: 'Gọi 1:1 theo lịch hẹn', body: `<div class="stack"><div class="empty" style="padding:4px 0"><div class="ico">${I('phoneCall')}</div><h3>Đặc quyền Premium</h3><p>Hội viên Premium có thể đặt lịch gọi thoại hoặc video 15–30 phút với chuyên gia để trao đổi sâu về bài nghiên cứu.</p></div><div class="note">${I('info')}<span>FBV không hỗ trợ gọi tự do. Cuộc gọi chỉ mở trong khung giờ đã hẹn và chuyên gia xác nhận.</span></div></div>`, actions: [{ label: 'Xem gói Premium', onClick: () => F.go('reader/pricing.html') }, { label: 'Dùng thử Premium (demo)', cls: 'btn-primary', onClick: () => { const ss = F.session(); ss.subscription = { plan: 'yearly', store: 'apple', since: now(), renew: new Date(Date.now() + 365 * 864e5).toISOString(), autoRenew: true }; F.save(); F.toast('Đã bật Premium (demo)'); setTimeout(() => bookCall(q, e, after, kind0), 300); } }] }); return; }
     let kind = kind0 || 'video';
     F.modal({ title: 'Đặt lịch gọi với ' + esc(e.short || e.name), body: `<div class="stack"><div class="seg full" id="bk">${[['video', 'Video'], ['voice', 'Thoại']].map((k) => `<button type="button" data-k="${k[0]}" class="${kind === k[0] ? 'on' : ''}">${I(k[0] === 'video' ? 'video' : 'phoneCall', 'i-xs')} ${k[1]}</button>`).join('')}</div>
       <div><div class="group-title">Khung giờ chuyên gia công bố</div><div class="group">${slots().map((s, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${s.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' })}<small>${time(s)} – ${time(new Date(+s + 30 * MIN))}</small></span><input type="radio" name="sl" value="${s.toISOString()}" ${i ? '' : 'checked'}></label>`).join('')}</div></div>
@@ -231,7 +238,7 @@
     q.readerUnread = false; q.readerSeen = q.messages.length; q.hideBefore = q.hideBefore || {}; F.save();
     const e = F.expert(q.expert); const r = F.report(q.r); const p2 = F.session().phase2;
     const blocked = () => me.blocked.includes(e.id);
-    const v = F.shell({ side: 'chat', bar: 'back', back: 'reader/inquiries.html', notab: true, title: '', right: `${p2 ? `<button class="icon-btn" id="book" aria-label="Đặt lịch gọi">${I('phoneCall')}</button>` : ''}<button class="icon-btn" id="media" aria-label="Tài liệu trong phiên">${I('layers')}</button><button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
+    const v = F.shell({ side: 'chat', bar: 'back', back: 'reader/inquiries.html', notab: true, title: '', right: `<button class="icon-btn" id="book" aria-label="Đặt lịch gọi">${I('phoneCall')}</button><button class="icon-btn" id="media" aria-label="Tài liệu trong phiên">${I('layers')}</button><button class="icon-btn" id="more" aria-label="Tùy chọn">${I('more')}</button>` });
     const head = () => { $('#abTitle').innerHTML = `<a class="row" style="justify-content:center;gap:8px;min-width:0" href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'sm')}<span class="ellipsis" style="font-size:16px">${esc(e.name)}</span>${F.vb(e)}${F.isMuted(q) ? `<span class="faint" title="Đã tắt thông báo">${I('bellOff', 'i-xs')}</span>` : ''}</a>`; };
     head(); document.title = 'Phản biện · ' + e.name + ' · FBV';
     v.innerHTML = `<div class="srch-bar" id="sb" hidden></div><div class="thread-quote"><a class="quote-card" href="${F.url('reader/report.html?id=' + r.id)}" style="display:block">“${esc(q.quote)}”<small>${esc(r.title)}</small></a><div class="row between mt-8 small faint"><span>${F.iStatusBadge(q.status)}</span><span>Mở ${F.date(q.createdAt)}${['new', 'assigned', 'in_progress'].includes(q.status) ? ' · phản hồi trong ' + F.db().config.slaHours + ' giờ' : ''}</span></div></div>
@@ -256,6 +263,7 @@
       bindThread(th, ctx);
       $$('[data-rebook]', th).forEach((b) => (b.onclick = () => bookCall(q, e, () => draw(), b.dataset.rebook)));
       $$('[data-cx]', th).forEach((b) => (b.onclick = () => F.confirm('Hủy lịch gọi?', 'Chuyên gia sẽ nhận được thông báo hủy. Hủy trước 12 giờ không tính lượt.', 'Hủy lịch', 'btn-danger', () => { const c = q.calls.find((x) => x.id === b.dataset.cx); c.status = 'cancelled'; F.save(); draw(); F.toast('Đã hủy lịch gọi', 'info'); })));
+      $$('[data-cok]', th).forEach((b) => (b.onclick = () => { const c = q.calls.find((x) => x.id === b.dataset.cok); c.at = c.proposed; c.proposed = null; c.reason = ''; c.confirmed = true; q.expertUnread = true; F.save(); draw(); F.toast('Đã đồng ý giờ mới · lịch gọi đã được xác nhận'); }));
       $$('[data-ccal]', th).forEach((b) => (b.onclick = () => F.toast('Mô phỏng: đã thêm vào Lịch của thiết bị (tệp .ics)')));
       const unh = $('#unh'); if (unh) unh.onclick = () => { delete q.hideBefore[me.id]; F.save(); draw(); };
       if (keep) window.scrollTo(0, y);
@@ -268,17 +276,19 @@
     const onScroll = () => { const far = document.body.scrollHeight - (window.scrollY + window.innerHeight) > 260; jn.hidden = !far; };
     window.addEventListener('scroll', onScroll, { passive: true }); setTimeout(onScroll, 50);
     jn.onclick = () => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); ctx.seen = null; };
-    const book = $('#book'); if (book) book.onclick = () => bookCall(q, e, () => draw());
+    const p2Gate = () => F.modal({ title: 'Gọi 1:1 theo lịch hẹn', body: `<div class="stack"><div class="empty" style="padding:4px 0"><div class="ico">${I('phoneCall')}</div><h3>Tính năng Phase 2</h3><p>Hội viên Premium đặt lịch gọi thoại/video 15–30 phút với chuyên gia. Không gọi tự do — cuộc gọi chỉ mở trong khung giờ đã hẹn.</p></div></div>`, actions: [{ label: 'Để sau' }, { label: 'Bật mô phỏng Phase 2', cls: 'btn-primary', onClick: () => { F.session().phase2 = true; F.save(); location.reload(); } }] });
+    const openBook = () => (p2 ? bookCall(q, e, () => draw()) : p2Gate());
+    $('#book').onclick = openBook;
     $('#media').onclick = () => mediaSheet(q.messages, me.id, [{ href: F.url('reader/report.html?id=' + r.id), label: r.title, icon: 'file' }]);
     $('#more').onclick = () => F.menu([
       { icon: 'search', label: 'Tìm trong phiên', onClick: () => searchBar(ctx) },
       { icon: 'layers', label: 'Ảnh, file & liên kết trong phiên', onClick: () => $('#media').click() },
       { icon: F.isMuted(q) ? 'bell' : 'bellOff', label: F.isMuted(q) ? 'Bật lại thông báo' : 'Tắt thông báo phiên này', onClick: () => muteSheet(q, () => { head(); }) },
-      ...(p2 ? [{ icon: 'phoneCall', label: 'Đặt lịch gọi với chuyên gia (Premium)', onClick: () => bookCall(q, e, () => draw()) }] : []),
+      { icon: 'phoneCall', label: 'Đặt lịch gọi với chuyên gia (Premium)', onClick: openBook },
       { icon: 'file', label: 'Xem bài nghiên cứu gốc', onClick: () => F.go('reader/report.html?id=' + r.id + (q.block != null ? '#p' + q.block : '')) },
       ...(['closed', 'reported'].includes(q.status) ? [] : [{ icon: 'checkCircle', label: 'Đóng phiên (đã được giải đáp)', onClick: () => { q.status = 'closed'; F.save(); composer(); draw(); F.toast('Đã đóng phiên. Cảm ơn bạn!'); } }]),
       { icon: 'eyeOff', label: q.hideBefore[me.id] ? 'Hiện lại lịch sử đã ẩn' : 'Ẩn lịch sử trò chuyện', onClick: () => { if (q.hideBefore[me.id]) { delete q.hideBefore[me.id]; F.save(); draw(); return; } F.confirm('Ẩn lịch sử trò chuyện?', 'Toàn bộ tin nhắn hiện có sẽ được ẩn trên tài khoản của bạn. Chuyên gia vẫn thấy lịch sử, và FBV vẫn lưu trữ để phục vụ kiểm duyệt theo chính sách cộng đồng.', 'Ẩn lịch sử', 'btn-danger', () => { q.hideBefore[me.id] = now(); F.save(); draw(); F.toast('Đã ẩn lịch sử phía bạn', 'info'); }); } },
-      { icon: 'flag', label: 'Báo cáo vi phạm', danger: true, onClick: () => reportMsg('inquiry', q.id, { by: e.id, x: 'Toàn bộ phiên #' + q.id.toUpperCase() }) },
+      { icon: 'flag', label: 'Báo cáo vi phạm', danger: true, onClick: () => F.reportSheet({ type: 'inquiry', ref: q.id, target: e.id, what: 'Toàn bộ phiên #' + q.id.toUpperCase() + ' với ' + e.name, block: 'Chặn chuyên gia này', after: () => { composer(); draw(); } }) },
       { icon: 'ban', label: blocked() ? 'Bỏ chặn chuyên gia' : 'Chặn chuyên gia', danger: true, onClick: () => { if (blocked()) { me.blocked = me.blocked.filter((x) => x !== e.id); F.save(); composer(); draw(); F.toast('Đã bỏ chặn'); } else F.confirm('Chặn ' + e.name + '?', 'Bạn sẽ không nhận tin nhắn từ chuyên gia này và không thể gửi phản biện mới tới họ. Có thể bỏ chặn trong Cài đặt.', 'Chặn', 'btn-danger', () => { me.blocked.push(e.id); F.save(); composer(); draw(); F.toast('Đã chặn chuyên gia', 'info'); }); } }
     ], 'Phiên phản biện');
   };
@@ -322,7 +332,7 @@
     const v = F.shell({ side: 'chat', bar: 'back', back: 'reader/inquiries.html', title: '' });
     const all = F.db().sessions.slice().sort((a, b) => new Date(a.at) - new Date(b.at));
     const isEnd = (x) => Date.now() > new Date(x.at).getTime() + x.len * MIN;
-    const up = all.filter((x) => !isEnd(x)); const past = [{ e: 'e5', at: new Date(Date.now() - 12 * 864e5).toISOString(), t: 'Lạm phát 2026: đọc cấu phần CPI' }, { e: 'e3', at: new Date(Date.now() - 40 * 864e5).toISOString(), t: 'Chi phí logistics và biên lợi nhuận doanh nghiệp' }];
+    const up = all.filter((x) => !isEnd(x) && !x.cancelled); const past = [{ e: 'e5', at: new Date(Date.now() - 12 * 864e5).toISOString(), t: 'Lạm phát 2026: đọc cấu phần CPI' }, { e: 'e3', at: new Date(Date.now() - 40 * 864e5).toISOString(), t: 'Chi phí logistics và biên lợi nhuận doanh nghiệp' }];
     const prem = F.hasSub();
     v.innerHTML = `<div class="page" style="padding-bottom:24px">${s.phase2 ? '' : `<div class="note warn mb-16">${I('alert')}<span class="grow">Màn hình <b>Phase 2</b> (mô phỏng).</span><button class="btn btn-gray btn-xs" id="p2on">Bật</button></div>`}<div class="auth-hero" style="padding-top:0"><span class="tag prem">${I('crown', 'i-xs')}Đặc quyền Premium</span><h1 class="mt-12">Buổi trao đổi kín cùng chuyên gia</h1><p>Phiên video 60 phút, tối đa 20–25 hội viên, không ghi hình công khai. Mỗi buổi có một <b>phòng trao đổi kín</b> để gửi câu hỏi trước và nhận tài liệu sau buổi.</p></div>
       ${prem ? '' : `<div class="note accent mb-16">${I('lock')}<span class="grow">Dành cho hội viên Premium. <a class="link" href="${F.url('reader/pricing.html')}">Nâng cấp</a> để đăng ký tham gia.</span></div>`}
@@ -351,19 +361,21 @@
     const st = new Date(ss.at).getTime(); const end = st + ss.len * MIN; const live = Date.now() >= st - 10 * MIN && Date.now() <= end; const ro = Date.now() > end + 7 * 864e5;
     const seen0 = (rm.seen || {})[me.id] != null ? rm.seen[me.id] : rm.messages.length; const newCount = rm.messages.slice(seen0).filter((m) => m.by !== me.id).length;
     rm.seen = rm.seen || {}; rm.seen[me.id] = rm.messages.length; F.save();
-    const roleOf = (id) => (id === rm.owner ? '<span class="role-b own">Trưởng phòng</span>' : id === rm.mod ? '<span class="role-b mod">Điều phối FBV</span>' : '');
+    const roleOf = (id) => (id === rm.owner ? '<span class="role-b own">Trưởng phòng</span>' : id === rm.mod ? '<span class="role-b mod">Điều phối FBV</span>' : F.staff(id) ? '<span class="role-b mod">FBV</span>' : '');
     $('#abTitle').innerHTML = `<span class="ab2"><b class="ellipsis">${esc(ss.t)}</b><small>${rm.members.length} thành viên${F.isMuted(rm) ? ' · đã tắt thông báo' : ''}</small></span>`;
     v.innerHTML = `<div class="srch-bar" id="sb" hidden></div><div class="page"><div class="room-pin"><div class="row"><div class="cal"><span>Th${new Date(st).getMonth() + 1}</span><b>${new Date(st).getDate()}</b></div><div class="grow"><div class="small muted">${liveTag(ss)} ${time(ss.at)} – ${time(new Date(end))} · Video · ${F.avatar(owner, 'xs')} ${esc(owner.name)}</div></div></div>
       <p class="small mt-8">${I('pin', 'i-xs')} ${esc(rm.pinned)}</p>${live ? `<a class="btn btn-primary btn-block mt-12" href="${F.url('reader/call.html?s=' + ss.id)}">${I('video')}Tham gia buổi gọi video</a>` : ''}</div></div>
       <div class="thread" id="th"></div><div id="cmp"></div><button type="button" class="jump-new" id="jn" hidden>${I('arrowDown', 'i-sm')}<span></span></button>`;
     let comp = null;
-    const ctx = { msgs: rm.messages, meId: me.id, term: '', seen: newCount ? seen0 : null, showName: true, roleOf, canWrite: !ro, searchPh: 'Tìm trong phòng',
+    const muted = (rm.muted || []).includes(me.id);
+    const ctx = { msgs: rm.messages, meId: me.id, term: '', seen: newCount ? seen0 : null, showName: true, roleOf, canWrite: !ro && !muted, searchPh: 'Tìm trong phòng',
+      canBlock: (id) => !F.staff(id) && id !== rm.owner, onBlockUser: (id) => F.confirm('Chặn ' + F.person(id).name + '?', 'Bạn sẽ không thấy tin nhắn của thành viên này trong phòng. Có thể bỏ chặn trong Cài đặt → Quyền riêng tư.', 'Chặn', 'btn-danger', () => { if (!me.blocked.includes(id)) me.blocked.push(id); F.save(); draw(); F.toast('Đã chặn thành viên', 'info'); }),
       onReply: (i) => comp && comp.setReply(i), onReport: (m) => reportMsg('room', rm.id, m),
       onSend: (m) => { rm.messages.push(m); rm.seen[me.id] = rm.messages.length; F.save(); ctx.seen = null; draw(); window.scrollTo(0, document.body.scrollHeight); },
       redraw: (keep) => draw(keep) };
-    const draw = (keep) => { const y = window.scrollY; const th = $('#th'); th.innerHTML = threadHtml(msgItems(rm.messages, me.id), ctx); bindThread(th, ctx); if (keep) window.scrollTo(0, y); };
-    $('#cmp').innerHTML = ro ? `<div class="composer-closed">Phòng đã chuyển sang chỉ đọc (7 ngày sau buổi trao đổi).</div>` : composerHtml('Trao đổi trong phòng…');
-    comp = ro ? null : bindComposer(ctx); dock(); draw();
+    const draw = (keep) => { const y = window.scrollY; const th = $('#th'); th.innerHTML = threadHtml(msgItems(rm.messages, me.id, null, me.blocked), ctx); bindThread(th, ctx); if (keep) window.scrollTo(0, y); };
+    $('#cmp').innerHTML = ro ? `<div class="composer-closed">Phòng đã chuyển sang chỉ đọc (7 ngày sau buổi trao đổi).</div>` : muted ? `<div class="composer-closed">${I('micOff', 'i-xs')} Điều phối viên đã tạm tắt quyền gửi tin của bạn trong phòng này. Liên hệ Hỗ trợ nếu cần.</div>` : composerHtml('Trao đổi trong phòng…');
+    comp = ro || muted ? null : bindComposer(ctx); dock(); draw();
     const sep = $('#newSep'); if (sep) sep.scrollIntoView({ block: 'center' }); else window.scrollTo(0, document.body.scrollHeight);
     const jn = $('#jn'); $('span', jn).textContent = newCount ? newCount + ' tin nhắn mới' : 'Xuống cuối';
     const onScroll = () => { jn.hidden = document.body.scrollHeight - (window.scrollY + window.innerHeight) <= 260; };
@@ -377,7 +389,7 @@
       { icon: 'layers', label: 'Ảnh, file & liên kết', onClick: () => mediaSheet(rm.messages, me.id, [], 'Tài liệu trong phòng') },
       { icon: F.isMuted(rm) ? 'bell' : 'bellOff', label: F.isMuted(rm) ? 'Bật lại thông báo' : 'Tắt thông báo phòng', onClick: () => muteSheet(rm, () => location.reload()) },
       { icon: 'logout', label: 'Rời phòng (hủy đăng ký buổi)', danger: true, onClick: () => F.confirm('Rời phòng?', 'Bạn sẽ hủy đăng ký buổi trao đổi và không nhận tin nhắn trong phòng nữa.', 'Rời phòng', 'btn-danger', () => { rm.members = rm.members.filter((x) => x !== me.id); s.rsvp = (s.rsvp || []).filter((x) => x !== ss.id); F.save(); F.go('reader/sessions.html'); }) },
-      { icon: 'flag', label: 'Báo cáo phòng', danger: true, onClick: () => reportMsg('room', rm.id, { by: rm.owner, x: 'Phòng “' + ss.t + '”' }) }
+      { icon: 'flag', label: 'Báo cáo phòng', danger: true, onClick: () => F.reportSheet({ type: 'room', ref: rm.id, target: rm.owner, what: 'Phòng “' + ss.t + '”' }) }
     ], 'Phòng trao đổi kín');
   };
 
@@ -386,19 +398,23 @@
     document.body.classList.add('rd', 'no-tab', 'call-body');
     const app = document.getElementById('app'); const me = F.me(); const D = F.db();
     const back = (p) => F.go(p);
-    let title, sub, peers, kind = 'video', st, len, onEnd, backUrl, host;
+    let title, sub, peers, kind = 'video', st, len, onEnd, backUrl, host, modMuted = false, callRef = null;
     const sid = F.param('s'); const q = F.inquiry(F.param('q'));
     if (!me) { app.className = 'call-screen'; app.innerHTML = `<div class="call-lobby">${F.gate('video', 'Đăng nhập để tham gia', 'Cuộc gọi chỉ dành cho thành viên đã đặt lịch.')}</div>`; return; }
     if (sid) {
       const ss = D.sessions.find((x) => x.id === sid); const rm = D.rooms.find((x) => x.session === sid);
       if (!ss || !F.hasSub() || !(F.session().rsvp || []).includes(sid)) { app.className = 'call-screen'; app.innerHTML = `<div class="call-lobby">${F.empty('lock', 'Không thể tham gia', 'Buổi trao đổi chỉ dành cho hội viên Premium đã đăng ký.', `<a class="btn btn-primary" href="${F.url('reader/sessions.html')}">Xem buổi trao đổi</a>`)}</div>`; return; }
+      modMuted = !!(rm && (rm.muted || []).includes(me.id)); callRef = { type: 'call', ref: sid, target: ss.e, what: 'Buổi trao đổi “' + ss.t + '”' };
       host = F.expert(ss.e); title = ss.t; sub = 'Buổi trao đổi kín · ' + (rm ? rm.members.length : ss.taken) + ' thành viên'; st = new Date(ss.at).getTime(); len = ss.len;
       peers = (rm ? rm.members : [ss.e]).filter((x) => x !== me.id).slice(0, 7).map(F.person); backUrl = 'reader/room.html?id=' + (rm ? rm.id : sid);
       onEnd = () => { F.toast('Đã rời buổi trao đổi'); setTimeout(() => back(backUrl), 400); };
-    } else if (q && q.reader === me.id) {
+    } else if (q && (q.reader === me.id || (me.expertId && q.expert === me.expertId))) {
+      const asExp = q.reader !== me.id;
       const c = (q.calls || []).find((x) => x.id === F.param('c')); if (!c) { F.go('reader/inquiry.html?id=' + q.id); return; }
-      host = F.expert(q.expert); kind = c.kind; title = (kind === 'video' ? 'Gọi video' : 'Gọi thoại') + ' với ' + host.name; sub = 'Phản biện 1:1 · ' + (c.note || 'Theo lịch hẹn'); st = new Date(c.at).getTime(); len = c.len || 30;
-      peers = [host]; backUrl = 'reader/inquiry.html?id=' + q.id;
+      host = F.expert(q.expert); kind = c.kind; title = (kind === 'video' ? 'Gọi video' : 'Gọi thoại') + ' với ' + (asExp ? F.user(q.reader).name : host.name); sub = 'Phản biện 1:1 · ' + (c.note || 'Theo lịch hẹn'); st = new Date(c.at).getTime(); len = c.len || 30;
+      callRef = { type: 'call', ref: q.id, target: asExp ? q.reader : q.expert, what: 'Cuộc gọi 1:1 trong phiên #' + q.id.toUpperCase(), block: asExp ? '' : 'Chặn chuyên gia này' };
+      peers = [asExp ? F.user(q.reader) : host]; backUrl = asExp ? 'reader/workspace.html?t=expert' : 'reader/inquiry.html?id=' + q.id;
+      if (asExp && c.confirmed === false) { app.className = 'call-screen'; app.innerHTML = `<div class="call-lobby">${F.empty('calendar', 'Lịch chưa được xác nhận', 'Hãy xác nhận lịch gọi trước khi tham gia.', `<a class="btn btn-primary" href="${F.url(backUrl)}">Về Không gian làm việc</a>`)}</div>`; return; }
       onEnd = (sec) => { c.status = 'done'; c.dur = Math.max(1, sec); F.save(); F.toast('Cuộc gọi đã kết thúc · ' + dur(c.dur)); setTimeout(() => back(backUrl), 500); };
     } else { F.go('reader/inquiries.html'); return; }
     const open = Date.now() >= st - 10 * MIN && Date.now() <= st + len * MIN;
@@ -413,22 +429,57 @@
           <p class="hint center" style="max-width:360px">${I('lock', 'i-xs')} Chỉ mở trong khung giờ đã hẹn · Không ghi âm, ghi hình · Không khuyến nghị mua/bán tài sản tài chính.</p></div>`;
       $('#cb').onclick = () => back(backUrl);
       $('#lm').onclick = () => { mic = !mic; lobby(); }; const lc = $('#lc'); if (lc) lc.onclick = () => { cam = !cam; lobby(); };
-      $('#join').onclick = () => { if (!open) return; t0 = Date.now(); inCall(); timer = setInterval(tick, 1000); };
+      $('#join').onclick = () => { if (!open) return; const go = () => { t0 = Date.now(); inCall(); timer = setInterval(tick, 1000); };
+        F.sysPermission('mic', (okM) => { if (!okM) { mic = false; F.toast('Chưa có quyền micrô · bạn tham gia ở chế độ chỉ nghe', 'info'); } if (kind === 'video') F.sysPermission('cam', (okC) => { if (!okC) cam = false; go(); }); else go(); }); };
     };
     const tick = () => { const el = $('#ct'); if (!el) return; const s = Math.floor((Date.now() - t0) / 1000); el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
     const inCall = () => {
+      if (modMuted) mic = false;
       const tiles = peers.map((p, k) => `<div class="tile ${k === 0 ? 'speak' : ''} ${kind === 'video' && k % 3 !== 2 ? 'cam' : ''}">${kind === 'video' && k % 3 !== 2 ? `<span class="cam-ph">${F.avatar(p, 'lg')}</span>` : F.avatar(p, 'lg')}<span class="nm">${esc(p.short || p.name)}${p.id === host.id ? ' · Chủ trì' : ''}</span></div>`).join('');
       app.innerHTML = `<div class="call-top"><span class="rec-off">${I('lock', 'i-xs')}Không ghi âm</span><div class="grow center"><b class="ellipsis">${esc(title)}</b><small id="ct">00:00</small></div><span style="width:40px"></span></div>
         <div class="tiles n${Math.min(peers.length + 1, 8)}">${tiles}<div class="tile me ${cam ? 'cam' : ''}">${cam ? `<span class="cam-ph">${I('user')}</span>` : F.avatar(me, 'lg')}<span class="nm">Bạn${mic ? '' : ` ${I('micOff', 'i-xs')}`}${hand ? ' ✋' : ''}</span></div></div>
-        <div class="call-ctl bottom"><button type="button" class="${mic ? '' : 'off'}" id="cm" aria-label="Micro">${I(mic ? 'mic' : 'micOff')}</button>${kind === 'video' ? `<button type="button" class="${cam ? '' : 'off'}" id="cc" aria-label="Camera">${I(cam ? 'video' : 'videoOff')}</button>` : `<button type="button" id="spk" aria-label="Loa">${I('volume')}</button>`}${sid ? `<button type="button" class="${hand ? 'on' : ''}" id="hd" aria-label="Giơ tay">${I('hand')}</button><a href="${F.url(backUrl)}" aria-label="Mở phòng trao đổi" id="ch">${I('chat')}</a>` : ''}<button type="button" class="end" id="end" aria-label="Kết thúc">${I('phoneOff')}</button></div>`;
+        <div class="call-ctl bottom"><button type="button" class="${mic ? '' : 'off'}" id="cm" aria-label="Micro">${I(mic ? 'mic' : 'micOff')}</button>${kind === 'video' ? `<button type="button" class="${cam ? '' : 'off'}" id="cc" aria-label="Camera">${I(cam ? 'video' : 'videoOff')}</button>` : `<button type="button" id="spk" aria-label="Loa">${I('volume')}</button>`}${sid ? `<button type="button" class="${hand ? 'on' : ''}" id="hd" aria-label="Giơ tay">${I('hand')}</button><a href="${F.url(backUrl)}" aria-label="Mở phòng trao đổi" id="ch">${I('chat')}</a>` : ''}<button type="button" id="crp" aria-label="Báo cáo vi phạm">${I('flag')}</button><button type="button" class="end" id="end" aria-label="Kết thúc">${I('phoneOff')}</button></div>${modMuted ? `<div class="call-banner">${I('micOff', 'i-xs')}Điều phối viên đã tắt micrô của bạn</div>` : ''}`;
       tick();
-      $('#cm').onclick = () => { mic = !mic; inCall(); }; const cc = $('#cc'); if (cc) cc.onclick = () => { cam = !cam; inCall(); };
+      $('#cm').onclick = () => { if (modMuted) { F.toast('Điều phối viên đã tắt micrô của bạn', 'info'); return; } if (!mic && F.perm('mic') === 'denied') { F.toast('Chưa có quyền micrô · bật trong Cài đặt iOS', 'error'); return; } mic = !mic; inCall(); };
+      $('#crp').onclick = () => F.reportSheet(Object.assign({ title: 'Báo cáo trong cuộc gọi' }, callRef)); const cc = $('#cc'); if (cc) cc.onclick = () => { cam = !cam; inCall(); };
       const spk = $('#spk'); if (spk) spk.onclick = () => F.toast('Đã chuyển sang loa ngoài', 'info');
       const hd = $('#hd'); if (hd) hd.onclick = () => { hand = !hand; inCall(); if (hand) F.toast('Bạn đã giơ tay · điều phối viên sẽ mời bạn phát biểu', 'info'); };
       $('#end').onclick = () => { clearInterval(timer); onEnd(Math.floor((Date.now() - t0) / 1000)); };
     };
     document.title = title + ' · FBV';
     lobby();
+  };
+
+
+  /* ================= X1 · Chuyên gia xác nhận / đổi giờ / từ chối lịch gọi ================= */
+  const notifyReader = (q, text) => { F.db().notifications.unshift({ id: F.uid('n'), user: q.reader, type: 'answer', ref: q.id, text, at: now(), read: false }); q.readerUnread = true; };
+  F.callDecide = (q, c, act, after) => {
+    const e = F.expert(q.expert); const kl = c.kind === 'video' ? 'gọi video' : 'gọi thoại';
+    if (act === 'confirm') { c.confirmed = true; c.proposed = null; notifyReader(q, `${e.name} đã xác nhận lịch ${kl} lúc ${whenLabel(c.at)}.`); F.save(); F.toast('Đã xác nhận lịch gọi · độc giả đã được thông báo'); after && after(); return; }
+    if (act === 'propose') {
+      F.modal({ title: 'Đề xuất giờ khác', body: `<div class="stack"><div class="group">${slots().map((s, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${s.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' })}<small>${time(s)}</small></span><input type="radio" name="ps" value="${s.toISOString()}" ${i ? '' : 'checked'}></label>`).join('')}</div><div class="field"><label for="pr">Lời nhắn cho độc giả (không bắt buộc)</label><input class="input" id="pr" maxlength="160" placeholder="VD: Tối thứ Năm tôi có lịch hội thảo…"></div></div>`,
+        actions: [{ label: 'Hủy' }, { label: 'Gửi đề xuất', cls: 'btn-primary', onClick: (cl, el) => { c.proposed = $('input[name=ps]:checked', el).value; c.reason = $('#pr', el).value.trim(); c.confirmed = false; notifyReader(q, `${e.name} đề xuất đổi lịch ${kl} sang ${whenLabel(c.proposed)}.`); F.save(); F.toast('Đã gửi đề xuất giờ mới'); after && after(); } }] });
+      return;
+    }
+    if (act === 'decline') {
+      F.modal({ title: 'Từ chối lịch gọi', body: `<div class="group">${['Không phù hợp lịch làm việc', 'Câu hỏi nên trao đổi bằng văn bản', 'Nội dung ngoài phạm vi chuyên môn', 'Lý do khác'].map((x, i) => `<label class="gi noicon"><span class="gl" style="font-weight:500">${x}</span><input type="radio" name="dr" value="${x}" ${i ? '' : 'checked'}></label>`).join('')}</div><p class="hint mt-8">Độc giả nhận thông báo kèm lý do và không bị trừ lượt.</p>`,
+        actions: [{ label: 'Hủy' }, { label: 'Từ chối', cls: 'btn-danger', onClick: (cl, el) => { c.status = 'declined'; c.reason = $('input[name=dr]:checked', el).value; notifyReader(q, `${e.name} chưa nhận lịch ${kl} (${whenLabel(c.at)}): ${c.reason}.`); F.save(); F.toast('Đã từ chối lịch gọi', 'info'); after && after(); } }] });
+    }
+  };
+  F.callStatusTag = (c) => (c.status === 'declined' ? '<span class="tag bad">Đã từ chối</span>' : c.status === 'done' ? '<span class="tag">Đã gọi</span>' : c.status === 'missed' ? '<span class="tag bad">Đã lỡ</span>' : c.status === 'cancelled' ? '<span class="tag">Độc giả hủy</span>' : c.proposed ? '<span class="tag info">Chờ độc giả đồng ý giờ mới</span>' : c.confirmed === false ? '<span class="tag warn">Chờ xác nhận</span>' : '<span class="tag ok">Đã xác nhận</span>');
+  F.expertCalls = (eid) => { const out = []; F.db().inquiries.filter((q) => q.expert === eid).forEach((q) => (q.calls || []).forEach((c) => { const end = new Date(c.at).getTime() + (c.len || 30) * MIN; if (c.status === 'scheduled' && Date.now() > end) c.status = 'missed'; out.push({ q, c }); })); return out.sort((a, b) => new Date(a.c.at) - new Date(b.c.at)); };
+  F.callActionsHtml = (q, c, link) => { const st = new Date(c.at).getTime(); const open = Date.now() >= st - 10 * MIN && Date.now() <= st + (c.len || 30) * MIN;
+    if (c.status !== 'scheduled') return '';
+    if (c.confirmed === false && !c.proposed) return `<button class="btn btn-primary btn-xs" data-cact="confirm" data-q="${q.id}" data-c="${c.id}">Xác nhận</button><button class="btn btn-gray btn-xs" data-cact="propose" data-q="${q.id}" data-c="${c.id}">Đổi giờ</button><button class="btn btn-gray btn-xs" data-cact="decline" data-q="${q.id}" data-c="${c.id}">Từ chối</button>`;
+    if (c.proposed) return '';
+    return open && link ? `<a class="btn btn-primary btn-xs" href="${F.url('reader/call.html?q=' + q.id + '&c=' + c.id)}">Tham gia</a>` : `<button class="btn btn-gray btn-xs" data-cact="propose" data-q="${q.id}" data-c="${c.id}">Đổi giờ</button>`; };
+  F.bindCallActions = (root, after) => $$('[data-cact]', root).forEach((b) => (b.onclick = (ev) => { ev.preventDefault(); const q = F.inquiry(b.dataset.q); const c = q.calls.find((x) => x.id === b.dataset.c); F.callDecide(q, c, b.dataset.cact, after); }));
+  F.expertCallsSection = (ex) => {
+    const all = F.expertCalls(ex.id); const up = all.filter((x) => x.c.status === 'scheduled'); const pend = up.filter((x) => x.c.confirmed === false && !x.c.proposed).length;
+    if (!all.length) return '';
+    return `<div class="sec" style="padding-left:0;padding-right:0"><h2>Lịch gọi 1:1 ${pend ? `<span class="tag warn" style="vertical-align:middle">${pend} chờ xác nhận</span>` : ''}</h2></div>
+      <div class="group">${(up.length ? up : all.slice(-2)).map(({ q, c }) => { const u = F.user(q.reader); return `<div class="gi call-row">${F.avatar(u, 'sm')}<span class="gl" style="font-weight:600">${esc(u.name)}<small>${I(c.kind === 'video' ? 'video' : 'phoneCall', 'i-xs')} ${whenLabel(c.proposed || c.at)} · ${c.len || 30} phút${c.note ? ' · ' + esc(c.note) : ''}</small><span class="row wrap mt-4" style="gap:6px">${F.callStatusTag(c)}${F.callActionsHtml(q, c, true)}</span></span></div>`; }).join('')}</div>
+      <p class="hint mt-8">Độc giả Premium đặt lịch theo khung giờ bạn công bố. Xác nhận trong 24 giờ; đổi giờ cần độc giả đồng ý.</p>`;
   };
 
   /* ---------------- CMS: hiển thị tin nhắn (thu hồi · trả lời · tệp) ---------------- */

@@ -68,6 +68,8 @@
     };
     const ask = (x) => {
       x = String(x || '').trim(); if (x.length < 2) return;
+      if (F.aiConsent && !me.aiConsent) { F.aiConsent(() => ask(x)); return; }
+      if (F.blockedText && F.blockedText(x, 'Câu hỏi gửi Trợ lý')) return;
       if (!unlimited() && used() >= FREE_PER_DAY) { F.modal({ title: 'Đã hết lượt hôm nay', body: `<p class="muted">Tài khoản miễn phí có ${FREE_PER_DAY} câu hỏi/ngày. Hội viên Premium dùng Trợ lý nghiên cứu không giới hạn.</p>`, actions: [{ label: 'Để sau' }, { label: 'Xem gói Premium', cls: 'btn-primary', onClick: () => F.go('reader/pricing.html') }] }); return; }
       me.ai.push({ role: 'u', x, at: new Date().toISOString() }); F.save(); draw();
       $('#th').insertAdjacentHTML('beforeend', `<div class="ai-msg typing" id="typing">${F.logoMark('logo-mark sm')}<div class="grow"><div class="ai-body muted small"><span class="spinner sm"></span> Đang tìm trong ${F.published().length} bài nghiên cứu đã thẩm định…</div></div></div>`);

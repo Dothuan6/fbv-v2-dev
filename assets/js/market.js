@@ -76,11 +76,14 @@
       <div class="ind-acts"><button class="btn btn-sm ${F.me() && F.me().watch.includes(ind.id) ? 'btn-soft on' : 'btn-gray'}" id="wt">${I(F.me() && F.me().watch.includes(ind.id) ? 'check' : 'plus')}Theo dõi</button><button class="btn btn-sm ${F.me() && F.me().pins.some((p) => p.i === ind.id) ? 'btn-soft on' : 'btn-gray'}" id="pn">${I('pin')}Ghim biểu đồ</button></div>
       ${macro ? '' : `<div class="range" id="rg"></div>`}<div class="chart-box"><div id="ch"></div></div>
       <div class="delay-note mt-8">${I('clock')}<span>${F.esc(ind.freq)} · ${ind.group === 'equity' ? 'trễ 15 phút · ' : ''}Nguồn: ${F.esc(ind.source)} · thu thập qua vnstock (${F.esc(ind.vn.src)}) · số liệu minh họa</span></div>
+      ${ind.vn && !ind.vn.ok ? `<div class="page mt-8"><div class="note warn">${I('alert')}<span>Nguồn dữ liệu đang gián đoạn. Đang hiển thị <b>giá trị gần nhất</b> (đồng bộ ${F.ago(ind.vn.lastSync)}).</span></div></div>` : ''}
+      <div style="padding:6px var(--gutter) 0"><button class="btn-text small" id="dsrc">${I('info', 'i-xs')} Nguồn & điều kiện sử dụng dữ liệu</button></div>
       <div class="page mt-16"><div class="stat-grid" id="sg"></div></div>
       <div class="sec"><h2>Bài nghiên cứu phân tích chỉ số này</h2><p>${rel.length} bài</p></div>
       <div style="padding:0 var(--gutter) 6px"><div class="row small muted">${I('sparkles', 'i-sm accent')}<span>Liên kết tự động bởi Vertex AI khi xuất bản, đã được biên tập viên kiểm duyệt.</span></div></div>
       ${rel.length ? rel.map((r) => F.postCompact(r)).join('') : F.empty('file', 'Chưa có bài nghiên cứu liên quan', 'FBV sẽ tự động gợi ý khi có bài nghiên cứu phân tích chỉ số này.')}
       <div class="page">${F.disclaimer()}</div>`;
+    $('#dsrc').onclick = () => F.modal({ title: 'Nguồn dữ liệu', body: `<div class="group plain"><div class="gi noicon"><span class="gl">Đơn vị công bố</span><span class="gv">${F.esc(ind.source)}</span></div><div class="gi noicon"><span class="gl">Tần suất</span><span class="gv">${F.esc(ind.freq)}</span></div><div class="gi noicon"><span class="gl">Độ trễ</span><span class="gv">${ind.group === 'equity' ? 'Tối thiểu 15 phút' : 'Theo kỳ công bố'}</span></div><div class="gi noicon"><span class="gl">Cập nhật gần nhất</span><span class="gv">${F.date(ind.vn.lastSync, true)}</span></div></div><p class="hint mt-8">Dữ liệu chỉ để tham khảo cho mục đích nghiên cứu, không phải dữ liệu thời gian thực và không dùng để ra quyết định giao dịch. FBV hiển thị dữ liệu theo thỏa thuận với nhà cung cấp dữ liệu được cấp phép.</p>`, actions: [{ label: 'Đóng', cls: 'btn-primary' }] });
     const draw = () => {
       if (macro) {
         F.chart.bar($('#ch'), { labels: ind.series.labels, values: ind.series.values, dec: ind.dec, height: 230, highlightLast: true, mode: ind.series.values.some((x) => x < 0) ? 'posneg' : '', suffix: ind.unit.startsWith('%') ? '%' : ' ' + ind.unit, label: ind.name });

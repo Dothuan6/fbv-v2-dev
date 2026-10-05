@@ -64,7 +64,7 @@
           $$('[data-pk]', el).forEach((b) => (b.onclick = () => { const [k, id] = b.dataset.pk.split(':'); link = k === 'r' ? { r: id } : { ind: id }; close(); drawLink(); }));
         };
         $('#lq', el).oninput = dl; dl(); } }); };
-    C().bindComposer({ msgs: [], meId: me.id, onSend: (m) => { const n = { id: F.uid('nt'), x: m.x, at: m.at }; if (m.files) n.files = m.files; if (link) Object.assign(n, link); me.notes.push(n); F.save(); link = null; drawLink(); f = 'all'; draw(true); F.toast('Đã lưu vào nhật ký'); } });
+    C().bindComposer({ msgs: [], meId: me.id, noFilter: true, onSend: (m) => { const n = { id: F.uid('nt'), x: m.x, at: m.at }; if (m.files) n.files = m.files; if (link) Object.assign(n, link); me.notes.push(n); F.save(); link = null; drawLink(); f = 'all'; draw(true); F.toast('Đã lưu vào nhật ký'); } });
     $('#jq').oninput = () => { term = $('#jq').value.trim().toLowerCase(); draw(); };
     $('#jm').onclick = () => C().mediaSheet(me.notes.map((n) => Object.assign({ by: me.id }, n)), me.id, [], 'Kho tệp & liên kết');
     draw();

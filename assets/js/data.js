@@ -445,6 +445,7 @@
     q.messages[1].rx = { u1: 'useful' };
     q.messages[3].re = 2;
     q.messages.push({ by: 'e1', at: ago(5.9 * H), x: 'Gửi anh/chị bảng ước lượng và biểu đồ chênh lệch so cùng kỳ để tham khảo.', files: [{ name: 'Uoc-luong-chenh-lech-tin-dung-huy-dong.xlsx', size: 48200, kind: 'file', scan: 'ok' }, { name: 'bieu-do-chenh-lech-yoy.png', size: 182000, kind: 'image', scan: 'ok' }] });
+    q.calls = [{ id: 'c3', kind: 'voice', by: 'u1', at: (() => { const x = new Date(Date.now() + 2 * D); x.setHours(20, 0, 0, 0); return x.toISOString(); })(), len: 15, status: 'scheduled', confirmed: false, note: 'Hỏi thêm cách tính chênh lệch so cùng kỳ' }];
     q.readerSeen = 3; })();
   // q2: tin nhắn đã thu hồi, cuộc gọi theo lịch (Phase 2), tắt thông báo
   (() => { const q = inquiries[1];
@@ -454,6 +455,7 @@
       { id: 'c2', kind: 'video', by: 'u1', at: later(2 * M), dur: 0, len: 30, status: 'scheduled', note: 'Kết quả kiểm định giai đoạn 2022–2025' }
     ];
     q.mutedUntil = 'forever'; q.readerSeen = q.messages.length; })();
+  inquiries[3].calls = [{ id: 'c4', kind: 'video', by: 'u2', at: (() => { const x = new Date(Date.now() + 3 * D); x.setHours(9, 0, 0, 0); return x.toISOString(); })(), len: 30, status: 'scheduled', confirmed: false, note: 'Kịch bản lãi suất nếu lạm phát vượt mục tiêu' }];
   inquiries.forEach((q) => { if (q.readerSeen == null) q.readerSeen = q.messages.length; });
 
   // Buổi trao đổi kín (Phase 2) — mỗi buổi tự tạo 1 phòng trao đổi kín; chỉ Admin tạo buổi/phòng
