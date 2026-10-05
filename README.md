@@ -107,3 +107,11 @@ netlify.toml            Cấu hình deploy Netlify
 ```
 
 > Nâng cấp từ bản trước: có thể xóa các tệp cũ không còn dùng — `assets/css/app.css`, `assets/css/reader.css`, `assets/css/kb.css`, `assets/js/knowledge.js`, `assets/js/kb.js`. Các trang cũ `reader/topics|topic|concept|glossary.html`, `cms/topics|glossary.html` chỉ còn chuyển hướng về trang chủ.
+
+
+## v3.3.1 — Giao diện English đầy đủ (E-10)
+
+- `prefs.js`: từ điển EN mở rộng (~900 chuỗi + ~90 mẫu regex) phủ toàn bộ màn reader, sheet/modal, toast, placeholder, `aria-label`/`title`, điều khoản & chính sách, nội dung thông báo hệ thống.
+- Bộ dịch tách đoạn theo ` · `, dịch ngày/tháng, thời lượng, đơn vị.
+- Giữ nguyên ngôn ngữ gốc: nội dung bài nghiên cứu, tên/hồ sơ chuyên gia, tin nhắn, ghi chú, tên buổi trao đổi. CMS vẫn tiếng Việt.
+- Xóa tài khoản: chấp nhận gõ `XÓA` hoặc `DELETE`.

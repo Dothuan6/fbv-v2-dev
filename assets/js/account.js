@@ -234,7 +234,7 @@
       <div class="field"><label for="cf">Nhập <b style="color:var(--danger)">XÓA</b> để xác nhận</label><input class="input" id="cf" autocomplete="off" placeholder="XÓA"></div>
       <button class="btn btn-danger btn-pill btn-block" id="del" disabled>Xóa tài khoản vĩnh viễn</button>
       <a class="btn btn-ghost btn-block" href="${F.url('reader/account-info.html')}">Giữ tài khoản</a></div>`;
-    $('#cf').oninput = () => { $('#del').disabled = $('#cf').value.trim().toUpperCase() !== 'XÓA'; };
+    $('#cf').oninput = () => { $('#del').disabled = !['XÓA', 'DELETE'].includes($('#cf').value.trim().toUpperCase()); };
     $('#del').onclick = () => {
       const db = F.db(); const id = me.id;
       db.users = db.users.filter((u) => u.id !== id); db.inquiries = db.inquiries.filter((q) => q.reader !== id); db.notifications = db.notifications.filter((n) => n.user !== id);
