@@ -9,13 +9,13 @@
   const later = (ms) => new Date(Date.now() + ms).toISOString();
 
   const experts = [
-    { id: 'e1', name: 'TS. Trần Quốc Bảo', short: 'Trần Quốc Bảo', title: 'Chuyên gia Kinh tế vĩ mô', org: 'Viện Nghiên cứu FBV', fields: ['macro'], verified: true, color: '#1877F2',
+    { id: 'e1', name: 'TS. Trần Quốc Bảo', short: 'Trần Quốc Bảo', title: 'Chuyên gia Kinh tế vĩ mô', org: 'Viện Nghiên cứu FBV', fields: ['macro', 'banking'], verified: true, color: '#1877F2',
       bio: 'Hơn 15 năm nghiên cứu chính sách tiền tệ và ổn định tài chính. Từng tham gia nhóm tư vấn chính sách cho các tổ chức phát triển khu vực châu Á. Tiến sĩ Kinh tế học, Đại học Quốc gia Úc.' },
-    { id: 'e2', name: 'ThS. Nguyễn Thu Hà', short: 'Nguyễn Thu Hà', title: 'Chuyên gia Fintech & Ngân hàng số', org: 'FBV Fintech Lab', fields: ['fintech'], verified: true, color: '#7C3AED',
+    { id: 'e2', name: 'ThS. Nguyễn Thu Hà', short: 'Nguyễn Thu Hà', title: 'Chuyên gia Fintech & Ngân hàng số', org: 'FBV Fintech Lab', fields: ['fintech', 'ai'], verified: true, color: '#7C3AED',
       bio: 'Nghiên cứu mô hình ngân hàng số, thanh toán điện tử và khung pháp lý thử nghiệm (sandbox). 10 năm kinh nghiệm tư vấn chuyển đổi số cho tổ chức tín dụng.' },
     { id: 'e3', name: 'PGS.TS. Lê Văn Khánh', short: 'Lê Văn Khánh', title: 'Chuyên gia Tài chính doanh nghiệp', org: 'Trường Kinh tế — Đại học Quốc gia', fields: ['micro'], verified: true, color: '#059669',
       bio: 'Giảng dạy và nghiên cứu tài chính doanh nghiệp, cấu trúc chi phí và năng suất ngành sản xuất. Tác giả nhiều công trình về chuỗi cung ứng Việt Nam.' },
-    { id: 'e4', name: 'TS. Phạm Minh Châu', short: 'Phạm Minh Châu', title: 'Chuyên gia Thị trường vốn', org: 'Viện Nghiên cứu FBV', fields: ['micro', 'macro'], verified: true, color: '#DC2626',
+    { id: 'e4', name: 'TS. Phạm Minh Châu', short: 'Phạm Minh Châu', title: 'Chuyên gia Thị trường vốn', org: 'Viện Nghiên cứu FBV', fields: ['micro', 'macro', 'stocks', 'finmkt'], verified: true, color: '#DC2626',
       bio: 'Chuyên sâu về cấu trúc thị trường chứng khoán, hành vi nhà đầu tư và dòng vốn quốc tế. Nguyên trưởng nhóm phân tích định lượng tại một tổ chức tài chính.' },
     { id: 'e5', name: 'ThS. Đỗ Hải Yến', short: 'Đỗ Hải Yến', title: 'Chuyên gia Giá cả & Lạm phát', org: 'FBV Macro Desk', fields: ['macro'], verified: true, color: '#D97706',
       bio: 'Theo dõi và mô hình hóa lạm phát, giá năng lượng và hàng hóa cơ bản. Thạc sĩ Kinh tế lượng.' },
@@ -237,6 +237,95 @@
       ] },
 
     /* ----- Bài đang trong quy trình CMS ----- */
+    { id: 'r18', stream: 'finmkt', status: 'published', author: 'e4', premium: false, readTime: 9, cover: 13, pdf: true,
+      title: 'Thị trường trái phiếu doanh nghiệp: chu kỳ đáo hạn và khả năng tái cấp vốn',
+      dek: 'Lượng trái phiếu đáo hạn dồn vào hai quý tới. Doanh nghiệp nào có dư địa tái cấp vốn, và kênh ngân hàng có thể bù đắp đến đâu?',
+      summary: ['Áp lực đáo hạn tập trung ở nhóm bất động sản và năng lượng tái tạo.', 'Phát hành mới phục hồi nhưng chủ yếu đến từ nhóm ngân hàng.', 'Chênh lệch lợi suất giữa các nhóm xếp hạng đang nới rộng.'],
+      tags: ['Trái phiếu', 'Tái cấp vốn', 'Lợi suất'], publishedAt: ago(2 * D + 3 * H), views: 3120,
+      body: [
+        P('Thị trường trái phiếu doanh nghiệp bước vào giai đoạn đáo hạn dày đặc, trong khi kênh phát hành mới mới chỉ phục hồi một phần. Câu hỏi trọng tâm không phải là tổng khối lượng đáo hạn, mà là cơ cấu: ai là người phải trả và họ còn những kênh vốn nào.'),
+        Hh('Cơ cấu đáo hạn theo ngành'),
+        { t: 'fig', title: 'Giá trị trái phiếu đáo hạn theo quý (nghìn tỷ đồng)', unit: '', data: [['Q3/2026', 62], ['Q4/2026', 88], ['Q1/2027', 74], ['Q2/2027', 51], ['Q3/2027', 39]], src: 'Tổng hợp của FBV — số liệu minh họa' },
+        P('Nhóm ngân hàng chiếm phần lớn khối lượng phát hành mới, chủ yếu để bổ sung vốn cấp 2. Ngược lại, doanh nghiệp bất động sản vẫn phụ thuộc vào đàm phán gia hạn và hoán đổi tài sản.'),
+        P('Nghiên cứu đề xuất theo dõi tỷ lệ gia hạn thành công và chênh lệch lợi suất theo nhóm xếp hạng như hai chỉ báo sớm về sức khỏe của thị trường.')
+      ] },
+    { id: 'r19', stream: 'finmkt', status: 'published', author: 'e4', premium: true, readTime: 10, cover: 14, pdf: true,
+      title: 'Đường cong lợi suất trái phiếu Chính phủ: tín hiệu về kỳ vọng lãi suất',
+      dek: 'Đường cong lợi suất dốc lên trở lại sau một năm đi ngang. Thị trường đang định giá điều gì cho lãi suất trung hạn?',
+      summary: ['Lợi suất kỳ hạn 10 năm tăng nhanh hơn kỳ hạn ngắn.', 'Nhu cầu của khối bảo hiểm vẫn là lực đỡ chính ở kỳ hạn dài.', 'Độ dốc đường cong phản ánh kỳ vọng lạm phát nhiều hơn rủi ro tín nhiệm.'],
+      tags: ['Trái phiếu Chính phủ', 'Lợi suất', 'Kỳ vọng'], publishedAt: ago(6 * D), views: 1870,
+      body: [
+        P('Đường cong lợi suất là cách thị trường tóm tắt kỳ vọng về lãi suất và lạm phát trong tương lai. Khi chênh lệch giữa kỳ hạn 10 năm và 2 năm nới rộng, thông điệp thường là kỳ vọng lãi suất trung hạn cao hơn.'),
+        Hh('Ai đang mua ở kỳ hạn dài?'),
+        P('Khối bảo hiểm nhân thọ và quỹ hưu trí tiếp tục là bên mua chính ở kỳ hạn trên 10 năm do nhu cầu khớp kỳ hạn nghĩa vụ. Ngân hàng thương mại tập trung ở kỳ hạn dưới 5 năm để quản lý thanh khoản.'),
+        P('Phân rã độ dốc cho thấy phần bù lạm phát kỳ vọng đóng góp phần lớn mức tăng, trong khi phần bù kỳ hạn gần như không đổi.')
+      ] },
+    { id: 'r20', stream: 'banking', status: 'published', author: 'e1', premium: false, readTime: 8, cover: 15, pdf: false,
+      title: 'Tăng trưởng tín dụng và chất lượng tài sản: nhìn từ nợ nhóm 2',
+      dek: 'Tín dụng tăng nhanh thường đi trước nợ xấu vài quý. Nợ nhóm 2 đang nói gì về chất lượng tài sản của hệ thống?',
+      summary: ['Nợ nhóm 2 là chỉ báo sớm tốt hơn tỷ lệ nợ xấu công bố.', 'Tín dụng tiêu dùng và bất động sản có tốc độ chuyển nhóm cao nhất.', 'Bộ đệm dự phòng phân hóa mạnh giữa các nhóm ngân hàng.'],
+      tags: ['Tín dụng', 'Nợ xấu', 'Ngân hàng'], publishedAt: ago(3 * D + 6 * H), views: 4280,
+      body: [
+        P('Tỷ lệ nợ xấu công bố thường phản ứng chậm vì phụ thuộc vào chính sách cơ cấu nợ và tốc độ xử lý. Nợ nhóm 2 — các khoản quá hạn từ 10 đến 90 ngày — phản ánh sớm hơn sức khỏe của người vay.'),
+        Hh('Nhóm khách hàng nào đang chuyển nhóm?'),
+        { t: 'table', cap: 'Tỷ lệ nợ nhóm 2 theo phân khúc (minh họa)', head: ['Phân khúc', '2024', '2025', '6T/2026'], rows: [['Doanh nghiệp lớn', '0,9%', '1,0%', '1,1%'], ['Doanh nghiệp nhỏ và vừa', '1,8%', '2,1%', '2,4%'], ['Tiêu dùng', '2,6%', '3,2%', '3,5%'], ['Bất động sản', '2,2%', '2,9%', '3,1%']], src: 'Tổng hợp của FBV — minh họa' },
+        P('Mức độ bao phủ dự phòng là yếu tố quyết định khả năng hấp thụ. Nhóm ngân hàng có tỷ lệ bao phủ trên 100% có dư địa xử lý mà không ảnh hưởng lớn đến lợi nhuận.')
+      ] },
+    { id: 'r21', stream: 'banking', status: 'published', author: 'e1', premium: false, readTime: 7, cover: 16, pdf: false,
+      title: 'Nghiệp vụ thị trường mở: công cụ điều tiết thanh khoản ngắn hạn',
+      dek: 'Tín phiếu và mua kỳ hạn giấy tờ có giá đang được dùng linh hoạt hơn. Cách đọc các phiên OMO để hiểu định hướng điều hành.',
+      summary: ['Khối lượng và kỳ hạn OMO phản ánh định hướng thanh khoản ngắn hạn.', 'Phát hành tín phiếu thường đi cùng áp lực tỷ giá.', 'Lãi suất trúng thầu là tín hiệu quan trọng hơn khối lượng.'],
+      tags: ['OMO', 'Thanh khoản', 'Chính sách tiền tệ'], publishedAt: ago(8 * D), views: 2640,
+      body: [
+        P('Nghiệp vụ thị trường mở (OMO) là công cụ để ngân hàng trung ương bơm hoặc hút thanh khoản ngắn hạn mà không cần thay đổi lãi suất điều hành. Việc đọc đúng các phiên OMO giúp hiểu định hướng chính sách trước khi có thông báo chính thức.'),
+        Hh('Đọc một phiên OMO'),
+        P('Ba yếu tố cần theo dõi là khối lượng, kỳ hạn và lãi suất trúng thầu. Kỳ hạn dài hơn cho thấy nhu cầu hỗ trợ thanh khoản mang tính cấu trúc, trong khi kỳ hạn ngắn thường chỉ xử lý thiếu hụt mùa vụ.'),
+        P('Khi tín phiếu được phát hành trở lại, mục tiêu thường là nâng mặt bằng lãi suất liên ngân hàng để giảm áp lực lên tỷ giá.')
+      ] },
+    { id: 'r22', stream: 'stocks', status: 'published', author: 'e4', premium: false, readTime: 9, cover: 17, pdf: true,
+      title: 'Định giá thị trường cổ phiếu: P/E dự phóng và tăng trưởng lợi nhuận',
+      dek: 'P/E thị trường đang ở quanh mức trung bình 5 năm. Mức định giá này hàm ý tốc độ tăng trưởng lợi nhuận nào?',
+      summary: ['P/E dự phóng thấp hơn P/E trượt do kỳ vọng lợi nhuận phục hồi.', 'Phân hóa định giá giữa các ngành ở mức cao nhất trong 3 năm.', 'Nhóm ngân hàng đóng góp phần lớn tăng trưởng lợi nhuận toàn thị trường.'],
+      tags: ['Định giá', 'P/E', 'Lợi nhuận'], publishedAt: ago(4 * D + 2 * H), views: 5460,
+      body: [
+        P('Định giá thị trường không nói lên điều gì nếu tách khỏi kỳ vọng tăng trưởng. Bài nghiên cứu này phân rã P/E dự phóng thành tăng trưởng lợi nhuận hàm ý và phần bù rủi ro vốn cổ phần.'),
+        Hh('Phân hóa giữa các ngành'),
+        { t: 'fig', title: 'P/E dự phóng theo ngành (lần)', unit: 'x', data: [['Ngân hàng', 8.4], ['Bất động sản', 14.2], ['Bán lẻ', 17.6], ['Công nghệ', 19.1], ['Thép', 10.3]], src: 'Tổng hợp của FBV — số liệu minh họa' },
+        P('Khoảng cách định giá giữa nhóm cao nhất và thấp nhất nới rộng, cho thấy thị trường đang trả giá cho tăng trưởng thay vì quy mô. Nội dung mang tính nghiên cứu, không phải khuyến nghị mua bán.')
+      ] },
+    { id: 'r23', stream: 'stocks', status: 'published', author: 'e4', premium: true, readTime: 11, cover: 18, pdf: true,
+      title: 'Nâng hạng thị trường: tác động tới dòng vốn và cấu trúc nhà đầu tư',
+      dek: 'Nâng hạng không chỉ là dòng vốn thụ động. Cấu trúc nhà đầu tư và thanh khoản sẽ thay đổi thế nào trong hai năm đầu?',
+      summary: ['Dòng vốn thụ động vào theo lộ trình, không dồn một lần.', 'Tỷ trọng nhà đầu tư tổ chức tăng làm giảm biến động ngắn hạn.', 'Giới hạn sở hữu nước ngoài là điểm nghẽn ở nhiều cổ phiếu lớn.'],
+      tags: ['Nâng hạng', 'Khối ngoại', 'Thanh khoản'], publishedAt: ago(9 * D), views: 3980,
+      body: [
+        P('Kinh nghiệm từ các thị trường được nâng hạng trước đây cho thấy dòng vốn thụ động đi vào theo nhiều đợt, tương ứng với lộ trình thêm vào rổ chỉ số. Tác động dài hạn hơn đến từ thay đổi cấu trúc nhà đầu tư.'),
+        Hh('Cấu trúc nhà đầu tư'),
+        P('Khi tỷ trọng tổ chức tăng, thanh khoản tập trung hơn vào nhóm vốn hóa lớn và biến động trong ngày giảm. Tuy vậy, giới hạn sở hữu nước ngoài khiến một phần dòng vốn không thể giải ngân vào các cổ phiếu đã kín room.'),
+        P('Nghiên cứu đề xuất theo dõi tỷ lệ sở hữu nước ngoài còn lại và giá trị giao dịch bình quân của nhóm vốn hóa lớn như hai chỉ báo chính.')
+      ] },
+    { id: 'r24', stream: 'ai', status: 'published', author: 'e2', premium: false, readTime: 8, cover: 19, pdf: false,
+      title: 'AI trong chấm điểm tín dụng: dữ liệu thay thế và rủi ro thiên lệch',
+      dek: 'Mô hình học máy giúp mở rộng tín dụng cho nhóm chưa có lịch sử vay. Đổi lại là rủi ro thiên lệch và yêu cầu giải thích được.',
+      summary: ['Dữ liệu thay thế cải thiện khả năng phân loại ở nhóm khách hàng mới.', 'Thiên lệch thường đến từ dữ liệu huấn luyện hơn là thuật toán.', 'Yêu cầu giải thích được là điều kiện để cơ quan quản lý chấp nhận.'],
+      tags: ['Chấm điểm tín dụng', 'Học máy', 'Quản trị rủi ro'], publishedAt: ago(2 * D + 9 * H), views: 3310,
+      body: [
+        P('Chấm điểm tín dụng truyền thống dựa trên lịch sử vay, khiến nhóm khách hàng chưa từng vay gần như không có điểm. Mô hình học máy dùng dữ liệu thay thế — giao dịch thanh toán, hóa đơn điện nước — để lấp khoảng trống này.'),
+        Hh('Thiên lệch đến từ đâu?'),
+        P('Phần lớn thiên lệch bắt nguồn từ dữ liệu huấn luyện phản ánh các quyết định cho vay trong quá khứ. Kiểm định công bằng theo nhóm và giám sát sau triển khai là hai biện pháp cần có.'),
+        P('Với tổ chức tín dụng, khả năng giải thích lý do từ chối khoản vay là yêu cầu pháp lý, đồng thời là điều kiện để khách hàng tin tưởng mô hình.')
+      ] },
+    { id: 'r25', stream: 'ai', status: 'published', author: 'e2', premium: false, readTime: 7, cover: 20, pdf: false,
+      title: 'Mô hình ngôn ngữ lớn trong phân tích tài chính: năng lực và giới hạn',
+      dek: 'Mô hình ngôn ngữ lớn tóm tắt báo cáo nhanh hơn chuyên viên, nhưng vẫn sai số liệu. Nên dùng ở khâu nào của quy trình phân tích?',
+      summary: ['Hiệu quả rõ nhất ở khâu tóm tắt và trích xuất thông tin.', 'Sai lệch số liệu là rủi ro lớn nhất, cần đối chiếu nguồn.', 'Quy trình có con người kiểm duyệt vẫn là chuẩn thực hành.'],
+      tags: ['Mô hình ngôn ngữ', 'Phân tích tài chính', 'Tự động hóa'], publishedAt: ago(7 * D), views: 2890,
+      body: [
+        P('Mô hình ngôn ngữ lớn đang được thử nghiệm rộng rãi trong các khâu đọc báo cáo tài chính, tóm tắt biên bản họp và soạn bản tin. Lợi ích về tốc độ là rõ ràng, nhưng độ tin cậy của số liệu vẫn là câu hỏi mở.'),
+        Hh('Dùng ở đâu, tránh ở đâu'),
+        P('Các tác vụ trích xuất và tóm tắt có nguồn đối chiếu cho kết quả tốt. Ngược lại, các tác vụ yêu cầu tính toán hoặc suy luận nhiều bước dễ tạo ra con số sai nhưng trình bày rất thuyết phục.'),
+        P('Chuẩn thực hành hiện nay là luôn kèm trích dẫn nguồn và giữ một bước kiểm duyệt của con người trước khi công bố.')
+      ] },
     { id: 'r13', stream: 'macro', status: 'draft', author: 'e1', premium: false, readTime: 6, cover: 5, pdf: false,
       title: 'Tín dụng xanh: thước đo và khoảng trống dữ liệu',
       dek: 'Dư nợ tín dụng xanh tăng nhanh, nhưng tiêu chí phân loại chưa thống nhất khiến việc so sánh giữa các ngân hàng gặp khó.',

@@ -94,13 +94,13 @@
   pages.home = () => {
     const v = F.shell({ tab: 'home', bar: 'root', rootTitle: 'Trang chủ', aside: asideHome() });
     const me = F.me(); let s = F.param('s') || 'all';
-    const tabs = [['all', 'Tất cả'], ['fintech', 'Fintech'], ['macro', 'Kinh tế Vĩ mô'], ['micro', 'Kinh tế Vi mô']].concat(me ? [['following', 'Đang theo dõi']] : []);
+    const tabs = [['all', 'Tất cả']].concat(Object.entries(F.STREAM)).concat(me ? [['following', 'Đang theo dõi']] : []);
     v.innerHTML = `<div class="utabs sticky" id="st" role="tablist"></div><div id="feed"></div>`;
     const draw = () => {
       $('#st').innerHTML = tabs.map((t) => `<button role="tab" class="${s === t[0] ? 'on' : ''}" data-s="${t[0]}">${t[1]}</button>`).join('');
       $$('#st [data-s]').forEach((b) => (b.onclick = () => { s = b.dataset.s; history.replaceState(null, '', '?s=' + s); draw(); window.scrollTo({ top: 0 }); }));
       let list = F.published();
-      if (['fintech', 'macro', 'micro'].includes(s)) list = list.filter((r) => r.stream === s);
+      if (F.STREAM[s]) list = list.filter((r) => r.stream === s);
       if (s === 'following') list = list.filter((r) => me.follows.includes(r.author));
       const mk = ['VNINDEX', 'VN30', 'HNX', 'UPCOM', 'USDVND', 'GOLD', 'BRENT', 'ON_RATE'];
       let html = '';
@@ -133,7 +133,7 @@
     v.innerHTML = `<div class="chips" style="padding:10px var(--gutter) 6px" id="flt"></div><div id="res"></div>`;
     const drawF = () => {
       const a = author ? F.expert(author) : null;
-      $('#flt').innerHTML = [['', 'Tất cả'], ['fintech', 'Fintech'], ['macro', 'Vĩ mô'], ['micro', 'Vi mô']].map((x) => `<button class="chip ${stream === x[0] ? 'on' : ''}" data-st="${x[0]}">${x[1]}</button>`).join('') +
+      $('#flt').innerHTML = [['', 'Tất cả']].concat(Object.entries(F.STREAM_S)).map((x) => `<button class="chip ${stream === x[0] ? 'on' : ''}" data-st="${x[0]}">${x[1]}</button>`).join('') +
         `<button class="chip ${a ? 'on' : ''}" id="fa">${I('user')}${a ? F.esc(a.short) : 'Tác giả'}${I('chevD', 'i-xs')}</button><button class="chip ${sort !== 'new' ? 'on' : ''}" id="fs">${I('sliders')}${{ new: 'Mới nhất', views: 'Đọc nhiều', rel: 'Liên quan' }[sort]}</button><button class="chip ${pdf ? 'on' : ''}" id="fp">${I('pdf')}Có PDF</button>`;
       $$('[data-st]').forEach((b) => (b.onclick = () => { stream = b.dataset.st; drawF(); drawR(); }));
       $('#fp').onclick = () => { pdf = !pdf; drawF(); drawR(); };

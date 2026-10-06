@@ -115,3 +115,10 @@ netlify.toml            Cấu hình deploy Netlify
 - Bộ dịch tách đoạn theo ` · `, dịch ngày/tháng, thời lượng, đơn vị.
 - Giữ nguyên ngôn ngữ gốc: nội dung bài nghiên cứu, tên/hồ sơ chuyên gia, tin nhắn, ghi chú, tên buổi trao đổi. CMS vẫn tiếng Việt.
 - Xóa tài khoản: chấp nhận gõ `XÓA` hoặc `DELETE`.
+
+
+## v3.4 — Bổ sung 4 danh mục nghiên cứu
+
+- Thêm luồng: Thị trường Tài chính (`finmkt`), Tiền tệ & Ngân hàng (`banking`), Thị trường Chứng khoán (`stocks`), Trí tuệ Nhân tạo (`ai`) — tổng 7 luồng.
+- Áp dụng ở: tab Trang chủ, bộ lọc Tìm kiếm, Onboarding, Lĩnh vực quan tâm, đăng ký chuyên gia, CMS (bộ lọc + chọn luồng khi soạn bài), ảnh bìa theo màu luồng, bản dịch English.
+- Dữ liệu mẫu: 8 bài mới (r18–r25, 2 bài/luồng); seed version 11.

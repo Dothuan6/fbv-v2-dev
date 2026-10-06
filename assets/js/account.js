@@ -89,7 +89,7 @@
   };
 
   /* ================= A04 · Onboarding (Tùy chỉnh trải nghiệm) ================= */
-  const STREAMS = [['fintech', 'Fintech', 'Ngân hàng số, thanh toán, tài sản mã hóa, sandbox', 'cpu', '#9B7BFF'], ['macro', 'Kinh tế Vĩ mô', 'Lãi suất, tỷ giá, lạm phát, GDP, FDI', 'globe', '#5AA9FF'], ['micro', 'Kinh tế Vi mô', 'Doanh nghiệp, ngành, thị trường vốn, hành vi', 'building', '#2FD06E']];
+  const STREAMS = [['fintech', 'Fintech', 'Ngân hàng số, thanh toán, tài sản mã hóa, sandbox', 'cpu', '#9B7BFF'], ['macro', 'Kinh tế Vĩ mô', 'Lãi suất, tỷ giá, lạm phát, GDP, FDI', 'globe', '#5AA9FF'], ['micro', 'Kinh tế Vi mô', 'Doanh nghiệp, ngành, thị trường vốn, hành vi', 'building', '#2FD06E'], ['finmkt', 'Thị trường Tài chính', 'Trái phiếu, thị trường vốn, phái sinh, dòng vốn', 'coins', '#D99A1F'], ['banking', 'Tiền tệ & Ngân hàng', 'Chính sách tiền tệ, tín dụng, thanh khoản, nợ xấu', 'building', '#2FA89A'], ['stocks', 'Thị trường Chứng khoán', 'Cổ phiếu, định giá, thanh khoản, nhà đầu tư', 'trend', '#F0714F'], ['ai', 'Trí tuệ Nhân tạo', 'AI trong tài chính, dữ liệu, tự động hóa, quản trị rủi ro', 'bot', '#D45FCB']];
   pages.onboarding = () => {
     const me = F.me(); if (!me) { F.go('reader/login.html'); return; }
     let step = 1; const sel = new Set(me.interests); const fol = new Set(me.follows);

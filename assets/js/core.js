@@ -5,7 +5,7 @@
 (function () {
   const FBV = (window.FBV = window.FBV || {});
   const KEY = 'fbv-v3-proto-db';
-  window.FBV_SEED.version = 10;
+  window.FBV_SEED.version = 11;
 
   /* ---------------- Store ---------------- */
   let DB = null;
@@ -127,8 +127,8 @@
   FBV.fmtVal = (ind, v) => FBV.num(v == null ? ind.value : v, ind.dec) + (ind.unit === '%' || ind.unit.startsWith('%') ? '%' : '');
   FBV.unitLabel = (ind) => (ind.unit === '%' ? '' : ind.unit.startsWith('%') ? ind.unit.replace('%', '').trim() : ind.unit);
   FBV.chgText = (ind) => { const ch = FBV.chg(ind); return ind.group === 'macro' ? FBV.signed(ch.c, ind.dec) + ' đ.%' : FBV.signed(ch.p, 2) + '%'; };
-  FBV.STREAM = { fintech: 'Fintech', macro: 'Kinh tế Vĩ mô', micro: 'Kinh tế Vi mô' };
-  FBV.STREAM_S = { fintech: 'Fintech', macro: 'Vĩ mô', micro: 'Vi mô' };
+  FBV.STREAM = { fintech: 'Fintech', macro: 'Kinh tế Vĩ mô', micro: 'Kinh tế Vi mô', finmkt: 'Thị trường Tài chính', banking: 'Tiền tệ & Ngân hàng', stocks: 'Thị trường Chứng khoán', ai: 'Trí tuệ Nhân tạo' };
+  FBV.STREAM_S = { fintech: 'Fintech', macro: 'Vĩ mô', micro: 'Vi mô', finmkt: 'TT Tài chính', banking: 'Tiền tệ & NH', stocks: 'Chứng khoán', ai: 'AI' };
   FBV.STATUS = { draft: 'Nháp', in_review: 'Chờ thẩm định', changes_requested: 'Yêu cầu chỉnh sửa', pending_approval: 'Chờ phê duyệt', scheduled: 'Đã lên lịch', published: 'Đã xuất bản', archived: 'Lưu trữ' };
   FBV.ISTATUS = { new: 'Mới', assigned: 'Đã phân công', in_progress: 'Đang trao đổi', answered: 'Đã trả lời', closed: 'Đã đóng', reported: 'Bị báo cáo' };
   FBV.GROUP = { equity: 'Chứng khoán', rate: 'Lãi suất', fx: 'Tỷ giá & Tiền tệ', commodity: 'Hàng hóa', macro: 'Vĩ mô định kỳ' };
@@ -273,7 +273,7 @@
   FBV.brand = (href, sub) => `<a class="logo" href="${href}" aria-label="FBV.ONE">${FBV.logoMark()}<span>FBV<span class="one">.ONE</span>${sub ? `<small>${sub}</small>` : ''}</span></a>`;
 
   /* ---------------- Cover art (deterministic) ---------------- */
-  const PAL = { fintech: ['#1A0840', '#4A0D96', '#B98CFF'], macro: ['#00254F', '#0D6A9C', '#1BACCE'], micro: ['#062A3A', '#0B6E7A', '#5FE0C8'] };
+  const PAL = { fintech: ['#1A0840', '#4A0D96', '#B98CFF'], macro: ['#00254F', '#0D6A9C', '#1BACCE'], micro: ['#062A3A', '#0B6E7A', '#5FE0C8'], finmkt: ['#2A1A00', '#8A5A00', '#F2B544'], banking: ['#04262A', '#0B6B66', '#52D6C4'], stocks: ['#3A0E08', '#A8371F', '#FF9A7A'], ai: ['#2A0830', '#8A1F86', '#F08BE6'] };
   FBV.cover = (r) => {
     const [a, b, c] = PAL[r.stream] || PAL.macro; const n = r.cover || 1; const id = 'cv' + r.id + Math.random().toString(36).slice(2, 5);
     let seed = n * 9301 + 49297; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
