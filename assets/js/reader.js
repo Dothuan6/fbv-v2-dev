@@ -8,7 +8,7 @@
   const $ = F.$, $$ = F.$$; const I = F.icon;
 
   /* ---------- Blocks renderer (dùng chung Reader + CMS preview) ---------- */
-  /* ---------- Bố cục bài nghiên cứu: PHẦN 1 nội dung → PHẦN 2 biểu đồ (không đan xen) ---------- */
+  /* ---------- Bố cục bài nghiên cứu (v3.5): tiêu đề → nội dung (hình/bảng nằm ngay trong bài) → phản biện ---------- */
   const figNo = (r) => { const m = {}; let n = 0; r.body.forEach((b, i) => { if (b.t === 'fig') m[i] = ++n; }); return m; };
   F.renderBlocks = (r, opts = {}) => {
     const fn = figNo(r);
@@ -19,7 +19,7 @@
       if (b.t === 'h') return `<h2 data-b="${i}">${F.esc(b.x)}</h2>`;
       if (b.t === 'quote') return `<blockquote data-b="${i}">${F.esc(b.x)}</blockquote>`;
       if (b.t === 'table') return `<div class="tbl" data-b="${i}"><div class="fig-t">${F.esc(b.cap)}</div><div class="sx"><table><thead><tr>${b.head.map((x, j) => `<th class="${j ? 'r' : ''}">${F.esc(x)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((row) => `<tr>${row.map((x, j) => `<td class="${j ? 'r' : ''}">${F.esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="src">Nguồn: ${F.esc(b.src)}</div></div>`;
-      if (b.t === 'fig') return `<a class="fig-ref" data-b="${i}" id="ref-${fn[i]}" href="#hinh-${fn[i]}">${I('bars', 'i-sm')}<span>Xem <b>Hình ${fn[i]}</b> — ${F.esc(b.title)} ở phần Biểu đồ</span>${I('chevD', 'i-xs')}</a>`;
+      if (b.t === 'fig') return `<figure class="cc inl" data-b="${i}" id="hinh-${fn[i]}"><div class="cc-h"><span class="cc-t">${F.esc(b.title)}</span></div><div class="cc-chart" data-fig="${i}"></div><figcaption>Nguồn: ${F.esc(b.src)}</figcaption></figure>`;
       return '';
     }).join('');
   };
@@ -184,13 +184,10 @@
       <h1 class="art-t">${F.esc(r.title)}</h1><p class="art-d">${F.esc(r.dek)}</p>
       <div class="art-by"><a href="${F.url('reader/expert.html?id=' + e.id)}">${F.avatar(e, 'md')}</a><div class="t"><a href="${F.url('reader/expert.html?id=' + e.id)}"><b>${F.esc(e.name)} ${F.vb(e)}</b></a><small>${F.dateLong(r.publishedAt)} · ${r.readTime} phút đọc</small></div>${F.followBtn(e, 'btn btn-xs')}</div>
       <div class="art-acts"><span>${I('eye')}${F.compact(r.views)}</span><a href="#phan-bien">${I('chat')}${F.inqCount(r.id)}</a><span class="sp"></span>${r.pdf ? `<a href="${F.url('reader/report-pdf.html?id=' + r.id)}" aria-label="Mở PDF">${I('pdf')}</a>` : ''}<button class="${saved ? 'on' : ''}" data-bm="${r.id}" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div>
-      <div class="summary"><h4>Tóm tắt điều hành</h4><ul>${r.summary.map((x) => `<li>${F.esc(x)}</li>`).join('')}</ul></div>
       ${locked ? `<div class="paywall"><div class="prose fade">${F.renderBlocks(r, { to: cut + 2, widgets: false })}</div>
-        <div class="pw-card"><div class="ic">${I('lock')}</div><h3>Nội dung chuyên sâu dành cho hội viên Premium</h3><p>Bạn đang xem bản tóm tắt. Nâng cấp để đọc toàn văn, bảng số liệu, bản PDF và phản biện 1:1 không giới hạn.</p>
+        <div class="pw-card"><div class="ic">${I('lock')}</div><h3>Nội dung chuyên sâu dành cho hội viên Premium</h3><p>Bạn đang xem phần mở đầu. Nâng cấp để đọc toàn văn, bảng số liệu, bản PDF và phản biện 1:1 không giới hạn.</p>
           <div class="stack"><a class="btn btn-primary btn-pill btn-block" href="${F.url('reader/pricing.html?r=' + r.id)}">Nâng cấp Premium</a><a class="btn btn-gray btn-block" href="${F.url('reader/checkout.html?plan=single&r=' + r.id)}">Mở khóa riêng bài nghiên cứu này · ${F.num(79000)}đ</a><button class="btn-text" id="restore" style="margin:4px auto 0">Khôi phục giao dịch</button></div></div></div>`
-        : `<div class="part-k">Phần 1 · Nội dung</div><div class="prose" id="prose">${F.renderBlocks(r)}</div>`}
-      ${F.aiTagsRow(r)}
-      ${locked ? '' : F.chartSection(r)}
+        : `<div class="prose" id="prose">${F.renderBlocks(r)}</div>`}
       ${F.disclaimer()}
       <div id="phan-bien" class="sec" style="padding-left:0;padding-right:0"><h2>Phản biện 1:1</h2></div>
       <div class="panel"><div class="row top"><span class="ib" style="width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center;flex:none">${I('quote', 'i-sm')}</span><div class="grow"><b>Bôi đen một đoạn hoặc số liệu bất kỳ</b><p class="muted small mt-4">để gửi câu hỏi phản biện riêng tới ${F.esc(e.name)}. Trao đổi kín, không công khai.</p></div></div>
@@ -201,9 +198,9 @@
       ${related.length ? `<div class="sec" style="padding-left:0;padding-right:0"><h2>Đọc tiếp trong ${F.STREAM_S[r.stream]}</h2></div><div style="margin:0 calc(-1 * var(--gutter))">${related.map((x) => F.postCompact(x)).join('')}</div>` : ''}
     </article>
     <div class="actbar"><div class="inner"><button class="btn btn-primary" id="askBtn">${I('quote')}<span class="lbl">Trích dẫn & phản biện</span></button>${r.pdf ? `<a class="icon-btn" href="${F.url('reader/report-pdf.html?id=' + r.id)}" aria-label="Xem PDF">${I('pdf')}</a>` : ''}<button class="icon-btn ${saved ? 'on' : ''}" data-bm="${r.id}" id="bm" aria-label="${saved ? 'Bỏ lưu' : 'Lưu'}">${I(saved ? 'bookmarkFill' : 'bookmark')}</button><button class="icon-btn" data-share="${r.id}" aria-label="Chia sẻ">${I('share')}</button></div></div>`;
-    if (!locked) F.mountCharts(r, $('#bieu-do') || document);
+    F.mountCharts(r, document);
     const rs = $('#restore'); if (rs) rs.onclick = () => { F.toast('Không tìm thấy giao dịch trước đó cho tài khoản này', 'info'); };
-    const askWhole = () => { if (locked) { F.go('reader/pricing.html?r=' + r.id); return; } F.openInquiry(r, r.summary[0], 0); };
+    const askWhole = () => { if (locked) { F.go('reader/pricing.html?r=' + r.id); return; } F.openInquiry(r, r.title, 0); };
     $('#askAll').onclick = askWhole;
     $('#askBtn').onclick = () => { const sel = String(window.getSelection() || '').trim(); if (sel.length > 8 && !locked) { const b = selBlock(); F.openInquiry(r, sel.slice(0, 400), b); } else if (locked) F.go('reader/pricing.html?r=' + r.id); else F.toast('Bôi đen một đoạn trong bài để trích dẫn, hoặc dùng “Đặt câu hỏi về toàn bài”.', 'info'); };
     $('#more').onclick = () => F.menu([

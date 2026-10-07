@@ -122,3 +122,10 @@ netlify.toml            Cấu hình deploy Netlify
 - Thêm luồng: Thị trường Tài chính (`finmkt`), Tiền tệ & Ngân hàng (`banking`), Thị trường Chứng khoán (`stocks`), Trí tuệ Nhân tạo (`ai`) — tổng 7 luồng.
 - Áp dụng ở: tab Trang chủ, bộ lọc Tìm kiếm, Onboarding, Lĩnh vực quan tâm, đăng ký chuyên gia, CMS (bộ lọc + chọn luồng khi soạn bài), ảnh bìa theo màu luồng, bản dịch English.
 - Dữ liệu mẫu: 8 bài mới (r18–r25, 2 bài/luồng); seed version 11.
+
+
+## v3.5 — Đơn giản hóa màn chi tiết bài
+
+- Màn chi tiết bài (R03) chỉ còn: tiêu đề, nội dung, hình/bảng nằm ngay trong bài, và phản biện. Bỏ khối “Tóm tắt điều hành”, nhãn “Phần 1”, “Phần 2 · Biểu đồ & dữ liệu” và hàng “Thẻ do AI nhận diện”.
+- Biểu đồ chỉ số do AI liên kết không còn hiển thị trong bài; liên kết vẫn dùng cho mục “Bài nghiên cứu phân tích chỉ số này” ở trang chỉ số.
+- CMS: bản xem trước khớp bố cục mới; ô “Ý chính” giữ lại cho tìm kiếm và Trợ lý, không hiển thị trong bài.

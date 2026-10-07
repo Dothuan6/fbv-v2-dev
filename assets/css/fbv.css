@@ -1160,3 +1160,8 @@ input[type=range] { accent-color: var(--brand-gold); }
 .group.kv .gi { align-items: flex-start; }
 .group.kv .gl { flex: 0 0 40%; }
 .group.kv .gv { white-space: normal; text-align: right; overflow: visible; }
+
+/* v3.5 · Hình/biểu đồ của tác giả nằm ngay trong nội dung bài */
+.prose .cc.inl, .article .cc.inl { margin: 1.3em 0; }
+.cc.inl figcaption { font-size: 12.5px; color: var(--text-3, var(--muted)); margin-top: 8px; font-family: var(--font-ui, inherit); }
+.cc.inl .cc-t { font-family: var(--font-ui, inherit); }
